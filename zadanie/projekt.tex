@@ -1,0 +1,135 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[polish]{babel}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+\title{Dokument założeń projektu}
+\author{Filip Stępień \and Rafał Grot \and Bartłomiej Karkoszka}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Dane zespołu}
+
+\begin{itemize}
+  \item Filip Stępień
+  \item Rafał Grot
+  \item Bartłomiej Karkoszka
+\end{itemize}
+
+\section{Temat projektu}
+
+\textbf{System klasyfikacji i wyszukiwania dokumentów JSON na podstawie automatycznie generowanych schematów -- rozszerzenie tematu ,,Generacja schematu dla dokumentów JSON''}
+
+\section{Opis projektu}
+
+Celem projektu jest opracowanie aplikacji umożliwiającej automatyczną analizę dokumentów w formacie JSON, generowanie odpowiadających im schematów w standardzie JSON Schema oraz organizowanie dokumentów w logiczne grupy na podstawie ich struktury.
+
+Podstawową ideą systemu jest traktowanie struktury dokumentu JSON jako kryterium klasyfikacji. Każdy dokument wprowadzony do systemu jest analizowany pod kątem swojej budowy (typów danych, obecności pól oraz zagnieżdżeń), a następnie na tej podstawie tworzony jest jego schemat. Wygenerowany schemat reprezentuje kategorię dokumentów o określonej strukturze.
+
+System porównuje strukturę nowo dodanego dokumentu z istniejącymi schematami. Jeśli struktura dokumentu jest zgodna z jednym z istniejących schematów, dokument zostaje przypisany do odpowiadającej mu kategorii. W przeciwnym przypadku tworzony jest nowy schemat, który definiuje nową kategorię dokumentów.
+
+Dodatkowo aplikacja umożliwia przeszukiwanie zgromadzonych dokumentów przy użyciu prostego języka zapytań. Użytkownik może filtrować dokumenty na podstawie obecności oraz wartości określonych pól.
+
+\section{Technologie}
+
+\begin{itemize}
+  \item Java -- język programowania
+  \item JavaFX -- interfejs użytkownika
+  \item SQLite -- przechowywanie danych
+  \item Git / GitHub -- kontrola wersji
+\end{itemize}
+
+\section{Funkcjonalności i przypadki użycia}
+
+\subsection{Dodanie dokumentu JSON}
+
+Użytkownik dodaje dokument JSON do systemu. System weryfikuje poprawność składni dokumentu, analizuje jego strukturę oraz generuje odpowiadający mu schemat. Następnie dokument zostaje przypisany do istniejącej kategorii lub powoduje utworzenie nowej kategorii.
+
+\subsection{Generowanie schematu JSON Schema}
+
+Na podstawie struktury dokumentu JSON system automatycznie tworzy schemat opisujący typy danych, pola oraz relacje zagnieżdżeń.
+
+\subsection{Klasyfikacja dokumentu}
+
+Każda kategoria przechowuje unikatowy schemat JSON. Po dodaniu pliku system porównuje wygenerowany schemat z istniejącymi kategoriami. W przypadku zgodności przypisuje dokument do istniejącej kategorii, w przeciwnym razie tworzy nową.
+
+\subsection{Przeglądanie kategorii}
+
+Użytkownik ma możliwość przeglądania listy dostępnych kategorii (schematów) oraz dokumentów przypisanych do każdej z nich.
+
+\subsection{Przeglądanie dokumentu}
+
+Użytkownik może wybrać dokument i przeglądać jego zawartość oraz informacje o przypisanej kategorii.
+
+\subsection{Wyszukiwanie dokumentów po strukturze}
+
+Użytkownik ma dostęp do wyszukiwarki, w której ma możliwość wyszukiwania dokumentów zawierających określone pola i wartości.
+
+\subsection{Pobieranie schematów i plików}
+
+Użytkownik może pobrać wcześniej przesłane pliki i wygenerowane schematy.
+
+\section{Podział prac w zespole}
+
+\subsection*{Rafał Grot}
+
+\begin{itemize}
+  \item analiza struktury JSON
+  \item implementacja generatora JSON Schema
+  \item implementacja porównywania schematów
+  \item logika przypisywania dokumentów do kategorii
+\end{itemize}
+
+\subsection*{Filip Stępień}
+
+\begin{itemize}
+  \item zaprojektowanie składni języka zapytań
+  \item implementacja parsera zapytań
+  \item implementacja logiki filtrowania dokumentów
+  \item obsługa złożonych zapytań i zagnieżdżonych ścieżek JSON
+\end{itemize}
+
+\subsection*{Bartłomiej Karkoszka}
+
+\begin{itemize}
+  \item implementacja logiki zapisu i odczytu dokumentów oraz schematów
+  \item implementacja interfejsu użytkownika, w tym:
+        \begin{itemize}
+          \item dodawanie i pobieranie plików
+          \item lista kategorii (schematów)
+          \item lista dokumentów
+          \item podgląd dokumentu
+          \item prezentacja wyników wyszukiwania
+          \item interfejs wprowadzania zapytań
+        \end{itemize}
+  \item integracja interfejsu z modułem zapytań i backendem
+\end{itemize}
+
+\section{Tematy projektów}
+
+\textbf{Programowanie systemów rozproszonych:}
+
+\begin{itemize}
+  \item Filip Stępień, Bartłomiej Karkoszka -- ,,Animacja fraktali''
+  \item Rafał Grot -- ,,Łamacz haseł''
+\end{itemize}
+
+\textbf{Prace inżynierskie:}
+
+\begin{itemize}
+  \item Filip Stępień -- ,,Projekt i implementacja systemu informatycznego do kategoryzacji respondentów i oceny jakości odpowiedzi ankiet z wykorzystaniem AI''
+  \item Rafał Grot -- ,,Projekt i wdrożenie klastra Kubernetes w środowisku on-premise''
+  \item Bartłomiej Karkoszka -- ,,Projekt i implementacja aplikacji mobilnej-asystenta do gry w bilard z wykorzystaniem biblioteki OpenCV''
+\end{itemize}
+
+\section{Repozytorium GitHub}
+
+\url{https://github.com/filip-stepien/json-insight}
+
+\end{document}
