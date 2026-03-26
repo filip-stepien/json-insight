@@ -45,3 +45,5 @@ build/
 *.out
 *.synctex.gz
 *.xdv
+.direnv
+.idea
