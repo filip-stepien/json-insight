@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="io.github.jsoninsight.controller.MainController"
+            styleClass="root"
+            prefWidth="1100" prefHeight="750">
+
+    <!-- TOP: Toolbar -->
+    <top>
+        <ToolBar styleClass="main-toolbar">
+            <Button text="Dodaj plik" onAction="#onAddFile" styleClass="accent-button"/>
+            <Button text="Pobierz dokument" onAction="#onExportDocument"/>
+            <Button text="Pobierz schemat" onAction="#onExportSchema"/>
+            <Separator orientation="VERTICAL"/>
+            <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="8">
+                <TextField fx:id="queryInput" promptText="Wpisz zapytanie..." HBox.hgrow="ALWAYS"/>
+                <Button text="Szukaj" onAction="#onSearch" styleClass="search-button"/>
+            </HBox>
+        </ToolBar>
+    </top>
+
+    <!-- CENTER: Main content -->
+    <center>
+        <SplitPane dividerPositions="0.25" styleClass="main-split">
+
+            <!-- LEFT: Sidebar -->
+            <VBox styleClass="sidebar" SplitPane.resizableWithParent="false"
+                  minWidth="200" prefWidth="260">
+                <padding>
+                    <Insets top="12" right="12" bottom="12" left="12"/>
+                </padding>
+
+                <Label text="Kategorie" styleClass="section-header"/>
+                <ListView fx:id="categoryList" VBox.vgrow="ALWAYS" styleClass="sidebar-list"/>
+
+                <Separator>
+                    <padding>
+                        <Insets top="8" bottom="8"/>
+                    </padding>
+                </Separator>
+
+                <Label text="Dokumenty" styleClass="section-header"/>
+                <ListView fx:id="documentList" VBox.vgrow="ALWAYS" styleClass="sidebar-list"/>
+            </VBox>
+
+            <!-- RIGHT: Preview + Search results -->
+            <SplitPane orientation="VERTICAL" dividerPositions="0.7">
+
+                <!-- Document preview -->
+                <VBox styleClass="preview-pane">
+                    <padding>
+                        <Insets top="12" right="12" bottom="12" left="12"/>
+                    </padding>
+                    <Label text="Podgląd dokumentu" styleClass="section-header"/>
+                    <TextArea fx:id="documentPreview" editable="false"
+                              wrapText="true" VBox.vgrow="ALWAYS"
+                              styleClass="json-preview"
+                              promptText="Wybierz dokument, aby zobaczyć jego zawartość..."/>
+                </VBox>
+
+                <!-- Search results -->
+                <VBox styleClass="results-pane">
+                    <padding>
+                        <Insets top="12" right="12" bottom="12" left="12"/>
+                    </padding>
+                    <Label text="Wyniki wyszukiwania" styleClass="section-header"/>
+                    <ListView fx:id="searchResultsList" VBox.vgrow="ALWAYS" styleClass="results-list"/>
+                </VBox>
+
+            </SplitPane>
+
+        </SplitPane>
+    </center>
+
+    <!-- BOTTOM: Status bar -->
+    <bottom>
+        <Label fx:id="statusBar" text="Gotowy" styleClass="status-bar">
+            <padding>
+                <Insets top="6" right="12" bottom="6" left="12"/>
+            </padding>
+        </Label>
+    </bottom>
+
+</BorderPane>
