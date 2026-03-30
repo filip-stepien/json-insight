@@ -1,4 +1,4 @@
-package io.github.jsoninsight.controller;
+package io.github.jsoninsight.ui.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -85,7 +85,6 @@ public class MainController {
         try {
             JsonDocument document = documentService.loadFromFile(file);
 
-            // Walidacja JSON
             try {
                 JsonParser.parseString(document.getContent());
             } catch (Exception e) {
@@ -93,7 +92,6 @@ public class MainController {
                 return;
             }
 
-            // Generowanie schematu i kategoryzacja
             JsonSchema schema = schemaService.generateSchema(document.getContent());
             List<Category> existingCategories = documentService.getAllCategories();
             Optional<Category> matchedCategory = schemaService.categorize(document, existingCategories);

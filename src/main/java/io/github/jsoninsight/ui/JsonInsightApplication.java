@@ -1,4 +1,4 @@
-package io.github.jsoninsight;
+package io.github.jsoninsight.ui;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

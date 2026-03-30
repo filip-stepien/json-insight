@@ -2,12 +2,11 @@ module io.github.jsoninsight {
     requires javafx.controls;
     requires javafx.fxml;
     requires static lombok;
-    requires java.sql;
     requires com.google.gson;
 
-    opens io.github.jsoninsight to javafx.fxml;
-    opens io.github.jsoninsight.controller to javafx.fxml;
-    exports io.github.jsoninsight;
+    opens io.github.jsoninsight.ui to javafx.fxml;
+    opens io.github.jsoninsight.ui.controller to javafx.fxml;
+    exports io.github.jsoninsight.ui;
     exports io.github.jsoninsight.query.lexer;
     exports io.github.jsoninsight.query.lexer.impl;
     exports io.github.jsoninsight.model;
