@@ -35,7 +35,19 @@ public class QueryLexerImpl implements QueryLexer {
         }
     }
 
-    private boolean isIdentifierStart(char character) {
+    private boolean isIdentifierDelimiter(char character) {
+        return character == '.';
+    }
+
+    private boolean isNumberStart(char character, char next) {
+        return Character.isDigit(character) || (character == '-' && Character.isDigit(next));
+    }
+
+    private boolean isStringDelimiter(char character) {
+        return character == '"';
+    }
+
+    private boolean isWordStart(char character) {
         return Character.isLetter(character) || character == '_';
     }
 
@@ -49,18 +61,9 @@ public class QueryLexerImpl implements QueryLexer {
         }
     }
 
-    private QueryToken readWord(QueryLexerState state) {
+    private QueryToken readIdentifier(QueryLexerState state) {
         int start = state.pos;
-
-        if (!isIdentifierStart(state.current())) {
-            throw new QueryLexerException(
-                "Invalid identifier start",
-                state.current(),
-                state.pos
-            );
-        }
-
-        state.pos++;
+        state.pos++; // consume leading '.'
 
         while (state.hasMore()) {
             char currentChar = state.current();
@@ -70,56 +73,51 @@ public class QueryLexerImpl implements QueryLexer {
                 continue;
             }
 
-            if (currentChar == '.') {
+            if (isIdentifierDelimiter(currentChar)) {
                 if (state.isAtEnd()) {
                     throw new QueryLexerException(
-                        "Identifier cannot end with '.'",
+                        "Identifier cannot end with a separator",
                         currentChar,
                         state.pos
                     );
                 }
 
-                if (!isIdentifierStart(state.peekNext())) {
+                if (!isIdentifierPart(state.peekNext())) {
                     throw new QueryLexerException(
-                        "Dot in identifier must be followed by a valid identifier segment",
+                        "Separator in identifier must be followed by a valid segment",
                         currentChar,
                         state.pos
                     );
                 }
 
-                state.pos++; // consume '.'
+                state.pos++;
                 continue;
             }
 
             break;
         }
 
+        return new QueryToken(QueryTokenType.IDENTIFIER, state.input.substring(start, state.pos));
+    }
+
+    private QueryToken readWord(QueryLexerState state) {
+        int start = state.pos;
+
+        while (state.hasMore() && isIdentifierPart(state.current())) {
+            state.pos++;
+        }
+
         String word = state.input.substring(start, state.pos);
 
         return switch (word.toUpperCase()) {
-            case "AND" ->
-                new QueryToken(QueryTokenType.AND, word);
-
-            case "OR" ->
-                new QueryToken(QueryTokenType.OR, word);
-
-            case "NOT" ->
-                new QueryToken(QueryTokenType.NOT, word);
-
-            case "EXISTS" ->
-                new QueryToken(QueryTokenType.EXISTS, word);
-
-            case "IS" ->
-                new QueryToken(QueryTokenType.IS, word);
-
-            case "TRUE", "FALSE" ->
-                new QueryToken(QueryTokenType.BOOLEAN, word);
-
-            case "NULL" ->
-                new QueryToken(QueryTokenType.NULL, word);
-
-            default ->
-                new QueryToken(QueryTokenType.IDENTIFIER, word);
+            case "AND" -> new QueryToken(QueryTokenType.AND, word);
+            case "OR" -> new QueryToken(QueryTokenType.OR, word);
+            case "NOT" -> new QueryToken(QueryTokenType.NOT, word);
+            case "EXISTS" -> new QueryToken(QueryTokenType.EXISTS, word);
+            case "IS" -> new QueryToken(QueryTokenType.IS, word);
+            case "TRUE", "FALSE" -> new QueryToken(QueryTokenType.BOOLEAN, word);
+            case "NULL" -> new QueryToken(QueryTokenType.NULL, word);
+            default -> new QueryToken(QueryTokenType.IDENTIFIER, word);
         };
     }
 
@@ -168,16 +166,17 @@ public class QueryLexerImpl implements QueryLexer {
     }
 
     private QueryToken readString(QueryLexerState state) {
-        int openingQuotePos = state.pos;
-        state.pos++; // skip opening "
+        int openingDelimiterPos = state.pos;
+        char openingDelimiter = state.current();
+        state.pos++; // skip opening delimiter
 
         StringBuilder value = new StringBuilder();
 
         while (state.hasMore()) {
             char currentChar = state.current();
 
-            if (currentChar == '"') {
-                state.pos++; // skip closing "
+            if (isStringDelimiter(currentChar)) {
+                state.pos++; // skip closing quote
                 return new QueryToken(QueryTokenType.STRING, value.toString());
             }
 
@@ -215,7 +214,7 @@ public class QueryLexerImpl implements QueryLexer {
             state.pos++;
         }
 
-        throw new QueryLexerException("Unterminated string literal", '"', openingQuotePos);
+        throw new QueryLexerException("Unterminated string literal", openingDelimiter, openingDelimiterPos);
     }
 
     private QueryToken readOperator(QueryLexerState state) {
@@ -273,19 +272,19 @@ public class QueryLexerImpl implements QueryLexer {
     private QueryToken readNextToken(QueryLexerState state) {
         char currentChar = state.current();
 
-        if (isIdentifierStart(currentChar)) {
+        if (isIdentifierDelimiter(currentChar)) {
+            return readIdentifier(state);
+        }
+
+        if (isWordStart(currentChar)) {
             return readWord(state);
         }
 
-        if (Character.isDigit(currentChar)) {
+        if (isNumberStart(currentChar, state.peekNext())) {
             return readNumber(state);
         }
 
-        if (currentChar == '-' && Character.isDigit(state.peekNext())) {
-            return readNumber(state);
-        }
-
-        if (currentChar == '"') {
+        if (isStringDelimiter(currentChar)) {
             return readString(state);
         }
 

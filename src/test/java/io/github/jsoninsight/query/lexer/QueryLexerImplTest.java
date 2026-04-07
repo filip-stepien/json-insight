@@ -15,31 +15,39 @@ class QueryLexerImplTest {
 
     @Test
     void recognizesSimpleIdentifier() {
-        List<QueryToken> tokens = lexer.tokenize("name");
+        List<QueryToken> tokens = lexer.tokenize(".name");
         assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
-        assertEquals("name", tokens.getFirst().value());
+        assertEquals(".name", tokens.getFirst().value());
     }
 
     @Test
     void recognizesNestedIdentifier() {
-        List<QueryToken> tokens = lexer.tokenize("address.city");
+        List<QueryToken> tokens = lexer.tokenize(".address.city");
         assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
-        assertEquals("address.city", tokens.getFirst().value());
+        assertEquals(".address.city", tokens.getFirst().value());
     }
 
     @Test
     void recognizesIdentifierWithUnderscore() {
-        List<QueryToken> tokens = lexer.tokenize("first_name");
+        List<QueryToken> tokens = lexer.tokenize(".first_name");
         assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
-        assertEquals("first_name", tokens.getFirst().value());
+        assertEquals(".first_name", tokens.getFirst().value());
     }
 
     @Test
     void recognizesIdentifierStartingWithUnderscore() {
-        List<QueryToken> tokens = lexer.tokenize("_id");
+        List<QueryToken> tokens = lexer.tokenize("._id");
         assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
-        assertEquals("_id", tokens.getFirst().value());
+        assertEquals("._id", tokens.getFirst().value());
     }
+
+    @Test
+    void recognizesIdentifierNamedLikeKeyword() {
+        List<QueryToken> tokens = lexer.tokenize(".and");
+        assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
+        assertEquals(".and", tokens.getFirst().value());
+    }
+
 
     // keywords
 
@@ -209,7 +217,7 @@ class QueryLexerImplTest {
 
     @Test
     void alwaysEndsWithEof() {
-        List<QueryToken> tokens = lexer.tokenize("name");
+        List<QueryToken> tokens = lexer.tokenize(".name");
         assertEquals(QueryTokenType.EOF, tokens.getLast().type());
     }
 
@@ -231,7 +239,7 @@ class QueryLexerImplTest {
 
     @Test
     void tokenizesComparisonExpression() {
-        List<QueryToken> tokens = lexer.tokenize("age == 25");
+        List<QueryToken> tokens = lexer.tokenize(".age == 25");
         assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
         assertEquals(QueryTokenType.EQ, tokens.get(1).type());
         assertEquals(QueryTokenType.NUMBER, tokens.get(2).type());
@@ -240,14 +248,14 @@ class QueryLexerImplTest {
 
     @Test
     void tokenizesExistsExpression() {
-        List<QueryToken> tokens = lexer.tokenize("name EXISTS");
+        List<QueryToken> tokens = lexer.tokenize(".name EXISTS");
         assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
         assertEquals(QueryTokenType.EXISTS, tokens.get(1).type());
     }
 
     @Test
     void tokenizesIsExpression() {
-        List<QueryToken> tokens = lexer.tokenize("age IS NUMBER");
+        List<QueryToken> tokens = lexer.tokenize(".age IS NUMBER");
         assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
         assertEquals(QueryTokenType.IS, tokens.get(1).type());
         assertEquals(QueryTokenType.IDENTIFIER, tokens.get(2).type());
@@ -256,7 +264,7 @@ class QueryLexerImplTest {
 
     @Test
     void tokenizesAndExpression() {
-        List<QueryToken> tokens = lexer.tokenize("name == \"John\" AND age > 25");
+        List<QueryToken> tokens = lexer.tokenize(".name == \"John\" AND .age > 25");
         assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
         assertEquals(QueryTokenType.EQ, tokens.get(1).type());
         assertEquals(QueryTokenType.STRING, tokens.get(2).type());
@@ -268,7 +276,7 @@ class QueryLexerImplTest {
 
     @Test
     void tokenizesFunctionCall() {
-        List<QueryToken> tokens = lexer.tokenize("contains(tags, \"admin\")");
+        List<QueryToken> tokens = lexer.tokenize("contains(.tags, \"admin\")");
         assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
         assertEquals(QueryTokenType.LPAREN, tokens.get(1).type());
         assertEquals(QueryTokenType.IDENTIFIER, tokens.get(2).type());
@@ -316,12 +324,12 @@ class QueryLexerImplTest {
 
     @Test
     void throwsForIdentifierEndingWithDot() {
-        assertThrows(QueryLexerException.class, () -> lexer.tokenize("name."));
+        assertThrows(QueryLexerException.class, () -> lexer.tokenize(".name."));
     }
 
     @Test
     void throwsForIdentifierWithDoubleDot() {
-        assertThrows(QueryLexerException.class, () -> lexer.tokenize("address..city"));
+        assertThrows(QueryLexerException.class, () -> lexer.tokenize(".address..city"));
     }
 
     @Test
@@ -353,9 +361,9 @@ class QueryLexerImplTest {
     void exceptionContainsPositionOfFailedCharacter() {
         QueryLexerException exception = assertThrows(
             QueryLexerException.class,
-            () -> lexer.tokenize("name @field")
+            () -> lexer.tokenize(".name @field")
         );
-        assertEquals(5, exception.getPosition());
+        assertEquals(6, exception.getPosition());
     }
 
     @Test
