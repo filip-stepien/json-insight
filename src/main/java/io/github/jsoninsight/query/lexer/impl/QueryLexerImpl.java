@@ -35,10 +35,6 @@ public class QueryLexerImpl implements QueryLexer {
         }
     }
 
-    private boolean isIdentifierDelimiter(char character) {
-        return character == '.';
-    }
-
     private boolean isNumberStart(char character, char next) {
         return Character.isDigit(character) || (character == '-' && Character.isDigit(next));
     }
@@ -47,8 +43,16 @@ public class QueryLexerImpl implements QueryLexer {
         return character == '"';
     }
 
-    private boolean isWordStart(char character) {
-        return Character.isLetter(character) || character == '_';
+    private boolean isPathDelimiter(char character) {
+        return character == '.';
+    }
+
+    private boolean isPathPart(char character) {
+        return Character.isLetterOrDigit(character) || character == '_';
+    }
+
+    private boolean isIdentifierStart(char character) {
+        return Character.isLetter(character);
     }
 
     private boolean isIdentifierPart(char character) {
@@ -61,30 +65,39 @@ public class QueryLexerImpl implements QueryLexer {
         }
     }
 
-    private QueryToken readIdentifier(QueryLexerState state) {
+    private QueryToken readPath(QueryLexerState state) {
         int start = state.pos;
         state.pos++; // consume leading '.'
+
+        if (!state.hasMore() || !isPathPart(state.current())) {
+            char invalidChar = state.hasMore() ? state.current() : '.';
+            throw new QueryLexerException(
+                "JSON path must start with a valid segment",
+                invalidChar,
+                state.pos
+            );
+        }
 
         while (state.hasMore()) {
             char currentChar = state.current();
 
-            if (isIdentifierPart(currentChar)) {
+            if (isPathPart(currentChar)) {
                 state.pos++;
                 continue;
             }
 
-            if (isIdentifierDelimiter(currentChar)) {
+            if (isPathDelimiter(currentChar)) {
                 if (state.isAtEnd()) {
                     throw new QueryLexerException(
-                        "Identifier cannot end with a separator",
+                        "JSON path cannot end with a delimiter",
                         currentChar,
                         state.pos
                     );
                 }
 
-                if (!isIdentifierPart(state.peekNext())) {
+                if (!isPathPart(state.peekNext())) {
                     throw new QueryLexerException(
-                        "Separator in identifier must be followed by a valid segment",
+                        "JSON path delimiter must be followed by a valid segment",
                         currentChar,
                         state.pos
                     );
@@ -97,10 +110,10 @@ public class QueryLexerImpl implements QueryLexer {
             break;
         }
 
-        return new QueryToken(QueryTokenType.IDENTIFIER, state.input.substring(start, state.pos));
+        return new QueryToken(QueryTokenType.JSON_PATH, state.input.substring(start, state.pos));
     }
 
-    private QueryToken readWord(QueryLexerState state) {
+    private QueryToken readIdentifier(QueryLexerState state) {
         int start = state.pos;
 
         while (state.hasMore() && isIdentifierPart(state.current())) {
@@ -272,12 +285,12 @@ public class QueryLexerImpl implements QueryLexer {
     private QueryToken readNextToken(QueryLexerState state) {
         char currentChar = state.current();
 
-        if (isIdentifierDelimiter(currentChar)) {
-            return readIdentifier(state);
+        if (isPathDelimiter(currentChar)) {
+            return readPath(state);
         }
 
-        if (isWordStart(currentChar)) {
-            return readWord(state);
+        if (isIdentifierStart(currentChar)) {
+            return readIdentifier(state);
         }
 
         if (isNumberStart(currentChar, state.peekNext())) {

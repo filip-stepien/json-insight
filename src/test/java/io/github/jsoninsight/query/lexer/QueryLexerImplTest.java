@@ -11,40 +11,40 @@ class QueryLexerImplTest {
 
     private static final QueryLexerImpl lexer = new QueryLexerImpl();
 
-    // identifiers
+    // json paths
 
     @Test
-    void recognizesSimpleIdentifier() {
+    void recognizesSimpleJsonPath() {
         List<QueryToken> tokens = lexer.tokenize(".name");
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.getFirst().type());
         assertEquals(".name", tokens.getFirst().value());
     }
 
     @Test
-    void recognizesNestedIdentifier() {
+    void recognizesNestedJsonPath() {
         List<QueryToken> tokens = lexer.tokenize(".address.city");
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.getFirst().type());
         assertEquals(".address.city", tokens.getFirst().value());
     }
 
     @Test
-    void recognizesIdentifierWithUnderscore() {
+    void recognizesJsonPathWithUnderscore() {
         List<QueryToken> tokens = lexer.tokenize(".first_name");
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.getFirst().type());
         assertEquals(".first_name", tokens.getFirst().value());
     }
 
     @Test
-    void recognizesIdentifierStartingWithUnderscore() {
+    void recognizesJsonPathStartingWithUnderscore() {
         List<QueryToken> tokens = lexer.tokenize("._id");
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.getFirst().type());
         assertEquals("._id", tokens.getFirst().value());
     }
 
     @Test
-    void recognizesIdentifierNamedLikeKeyword() {
+    void recognizesJsonPathNamedLikeKeyword() {
         List<QueryToken> tokens = lexer.tokenize(".and");
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.getFirst().type());
         assertEquals(".and", tokens.getFirst().value());
     }
 
@@ -240,7 +240,7 @@ class QueryLexerImplTest {
     @Test
     void tokenizesComparisonExpression() {
         List<QueryToken> tokens = lexer.tokenize(".age == 25");
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.getFirst().type());
         assertEquals(QueryTokenType.EQ, tokens.get(1).type());
         assertEquals(QueryTokenType.NUMBER, tokens.get(2).type());
         assertEquals(QueryTokenType.EOF, tokens.get(3).type());
@@ -249,14 +249,14 @@ class QueryLexerImplTest {
     @Test
     void tokenizesExistsExpression() {
         List<QueryToken> tokens = lexer.tokenize(".name EXISTS");
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.getFirst().type());
         assertEquals(QueryTokenType.EXISTS, tokens.get(1).type());
     }
 
     @Test
     void tokenizesIsExpression() {
         List<QueryToken> tokens = lexer.tokenize(".age IS NUMBER");
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.getFirst().type());
         assertEquals(QueryTokenType.IS, tokens.get(1).type());
         assertEquals(QueryTokenType.IDENTIFIER, tokens.get(2).type());
         assertEquals("NUMBER", tokens.get(2).value());
@@ -265,11 +265,11 @@ class QueryLexerImplTest {
     @Test
     void tokenizesAndExpression() {
         List<QueryToken> tokens = lexer.tokenize(".name == \"John\" AND .age > 25");
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.getFirst().type());
         assertEquals(QueryTokenType.EQ, tokens.get(1).type());
         assertEquals(QueryTokenType.STRING, tokens.get(2).type());
         assertEquals(QueryTokenType.AND, tokens.get(3).type());
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.get(4).type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.get(4).type());
         assertEquals(QueryTokenType.GT, tokens.get(5).type());
         assertEquals(QueryTokenType.NUMBER, tokens.get(6).type());
     }
@@ -279,7 +279,7 @@ class QueryLexerImplTest {
         List<QueryToken> tokens = lexer.tokenize("contains(.tags, \"admin\")");
         assertEquals(QueryTokenType.IDENTIFIER, tokens.getFirst().type());
         assertEquals(QueryTokenType.LPAREN, tokens.get(1).type());
-        assertEquals(QueryTokenType.IDENTIFIER, tokens.get(2).type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.get(2).type());
         assertEquals(QueryTokenType.COMMA, tokens.get(3).type());
         assertEquals(QueryTokenType.STRING, tokens.get(4).type());
         assertEquals(QueryTokenType.RPAREN, tokens.get(5).type());
@@ -323,12 +323,17 @@ class QueryLexerImplTest {
     }
 
     @Test
-    void throwsForIdentifierEndingWithDot() {
+    void throwsForJsonPathStartingWithDoubleDot() {
+        assertThrows(QueryLexerException.class, () -> lexer.tokenize("..name"));
+    }
+
+    @Test
+    void throwsForJsonPathEndingWithDot() {
         assertThrows(QueryLexerException.class, () -> lexer.tokenize(".name."));
     }
 
     @Test
-    void throwsForIdentifierWithDoubleDot() {
+    void throwsForJsonPathWithDoubleDot() {
         assertThrows(QueryLexerException.class, () -> lexer.tokenize(".address..city"));
     }
 
@@ -343,7 +348,7 @@ class QueryLexerImplTest {
     }
 
     @Test
-    void throwsForInvalidNegativeNumber() {
+    void throwsForNegativeNumberWithSpaceAfterMinus() {
         assertThrows(QueryLexerException.class, () -> lexer.tokenize("- 5"));
     }
 
