@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class JsonParserTest {
 
     private JsonNode parse(String json) {
-        Lexer lexer = new Lexer(json);
-        List<Token> tokens = lexer.tokenize();
+        JsonLexer jsonLexer = new JsonLexer(json);
+        List<Token> tokens = jsonLexer.tokenize();
         JsonParser parser = new JsonParser(tokens);
         return parser.parse();
     }
@@ -201,8 +201,8 @@ class JsonParserTest {
     @Test
     @DisplayName("Error on unexpected token after JSON value")
     void testUnexpectedTokenAfterValue() {
-        Lexer lexer = new Lexer("{},");
-        List<Token> tokens = lexer.tokenize();
+        JsonLexer jsonLexer = new JsonLexer("{},");
+        List<Token> tokens = jsonLexer.tokenize();
         JsonParser parser = new JsonParser(tokens);
         RuntimeException ex = assertThrows(RuntimeException.class, parser::parse);
         assertTrue(ex.getMessage().contains("Unexpected token after JSON value"));
@@ -211,8 +211,8 @@ class JsonParserTest {
     @Test
     @DisplayName("Error on missing colon in object")
     void testMissingColon() {
-        Lexer lexer = new Lexer("{\"key\" \"value\"}");
-        List<Token> tokens = lexer.tokenize();
+        JsonLexer jsonLexer = new JsonLexer("{\"key\" \"value\"}");
+        List<Token> tokens = jsonLexer.tokenize();
         JsonParser parser = new JsonParser(tokens);
         RuntimeException ex = assertThrows(RuntimeException.class, parser::parse);
         assertTrue(ex.getMessage().contains("Expected COLON"));
@@ -221,8 +221,8 @@ class JsonParserTest {
     @Test
     @DisplayName("Error on missing comma in object")
     void testMissingCommaInObject() {
-        Lexer lexer = new Lexer("{\"a\": 1 \"b\": 2}");
-        List<Token> tokens = lexer.tokenize();
+        JsonLexer jsonLexer = new JsonLexer("{\"a\": 1 \"b\": 2}");
+        List<Token> tokens = jsonLexer.tokenize();
         JsonParser parser = new JsonParser(tokens);
         RuntimeException ex = assertThrows(RuntimeException.class, parser::parse);
         assertTrue(ex.getMessage().contains("Expected RBRACE"));
@@ -231,8 +231,8 @@ class JsonParserTest {
     @Test
     @DisplayName("Error on missing comma in array")
     void testMissingCommaInArray() {
-        Lexer lexer = new Lexer("[1 2]");
-        List<Token> tokens = lexer.tokenize();
+        JsonLexer jsonLexer = new JsonLexer("[1 2]");
+        List<Token> tokens = jsonLexer.tokenize();
         JsonParser parser = new JsonParser(tokens);
         RuntimeException ex = assertThrows(RuntimeException.class, parser::parse);
         assertTrue(ex.getMessage().contains("Expected RBRACKET"));
@@ -241,8 +241,8 @@ class JsonParserTest {
     @Test
     @DisplayName("Error on unclosed object")
     void testUnclosedObject() {
-        Lexer lexer = new Lexer("{\"key\": \"value\" ");
-        List<Token> tokens = lexer.tokenize();
+        JsonLexer jsonLexer = new JsonLexer("{\"key\": \"value\" ");
+        List<Token> tokens = jsonLexer.tokenize();
         JsonParser parser = new JsonParser(tokens);
         RuntimeException ex = assertThrows(RuntimeException.class, parser::parse);
         assertTrue(ex.getMessage().contains("Expected RBRACE"));
@@ -251,8 +251,8 @@ class JsonParserTest {
     @Test
     @DisplayName("Error on unclosed array")
     void testUnclosedArray() {
-        Lexer lexer = new Lexer("[1, 2 ");
-        List<Token> tokens = lexer.tokenize();
+        JsonLexer jsonLexer = new JsonLexer("[1, 2 ");
+        List<Token> tokens = jsonLexer.tokenize();
         JsonParser parser = new JsonParser(tokens);
         RuntimeException ex = assertThrows(RuntimeException.class, parser::parse);
         assertTrue(ex.getMessage().contains("Expected RBRACKET"));
@@ -261,8 +261,8 @@ class JsonParserTest {
     @Test
     @DisplayName("Error message contains line and column")
     void testErrorMessageContainsLocation() {
-        Lexer lexer = new Lexer("{ \"key\" }");
-        List<Token> tokens = lexer.tokenize();
+        JsonLexer jsonLexer = new JsonLexer("{ \"key\" }");
+        List<Token> tokens = jsonLexer.tokenize();
         JsonParser parser = new JsonParser(tokens);
         RuntimeException ex = assertThrows(RuntimeException.class, parser::parse);
         assertTrue(ex.getMessage().contains("line="));

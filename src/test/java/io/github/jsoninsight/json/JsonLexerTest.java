@@ -8,13 +8,13 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static io.github.jsoninsight.json.TokenType.*;
 
-class LexerTest {
+class JsonLexerTest {
 
   @Test
   @DisplayName("Tokenize empty object")
   void testEmptyObject() {
-    Lexer lexer = new Lexer("{}");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("{}");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(3, tokens.size());
     assertEquals(LBRACE, tokens.get(0).type());
@@ -25,8 +25,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize empty array")
   void testEmptyArray() {
-    Lexer lexer = new Lexer("[]");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("[]");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(3, tokens.size());
     assertEquals(LBRACKET, tokens.get(0).type());
@@ -37,8 +37,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize simple string")
   void testSimpleString() {
-    Lexer lexer = new Lexer("\"hello\"");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("\"hello\"");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(2, tokens.size());
     assertEquals(STRING, tokens.get(0).type());
@@ -49,8 +49,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize string with escape sequences")
   void testStringWithEscapes() {
-    Lexer lexer = new Lexer("\"hello\\nworld\"");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("\"hello\\nworld\"");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(2, tokens.size());
     assertEquals(STRING, tokens.get(0).type());
@@ -60,8 +60,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize string with unicode escape")
   void testStringWithUnicode() {
-    Lexer lexer = new Lexer("\"\\u0041\""); // "A"
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("\"\\u0041\""); // "A"
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(2, tokens.size());
     assertEquals(STRING, tokens.get(0).type());
@@ -71,8 +71,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize integer")
   void testInteger() {
-    Lexer lexer = new Lexer("42");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("42");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(2, tokens.size());
     assertEquals(INTEGER, tokens.get(0).type());
@@ -82,8 +82,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize negative integer")
   void testNegativeInteger() {
-    Lexer lexer = new Lexer("-42");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("-42");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(2, tokens.size());
     assertEquals(INTEGER, tokens.get(0).type());
@@ -93,8 +93,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize float with decimal")
   void testFloatWithDecimal() {
-    Lexer lexer = new Lexer("3.14");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("3.14");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(2, tokens.size());
     assertEquals(FLOAT, tokens.get(0).type());
@@ -104,8 +104,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize float with exponent")
   void testFloatWithExponent() {
-    Lexer lexer = new Lexer("1.23e-4");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("1.23e-4");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(2, tokens.size());
     assertEquals(FLOAT, tokens.get(0).type());
@@ -115,8 +115,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize true literal")
   void testTrue() {
-    Lexer lexer = new Lexer("true");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("true");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(2, tokens.size());
     assertEquals(BOOLEAN, tokens.get(0).type());
@@ -126,8 +126,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize false literal")
   void testFalse() {
-    Lexer lexer = new Lexer("false");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("false");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(2, tokens.size());
     assertEquals(BOOLEAN, tokens.get(0).type());
@@ -137,8 +137,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize null literal")
   void testNull() {
-    Lexer lexer = new Lexer("null");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("null");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(2, tokens.size());
     assertEquals(NULL, tokens.get(0).type());
@@ -149,8 +149,8 @@ class LexerTest {
   @DisplayName("Tokenize complex object")
   void testComplexObject() {
     String json = "{\"name\": \"John\", \"age\": 30, \"active\": true}";
-    Lexer lexer = new Lexer(json);
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer(json);
+    List<Token> tokens = jsonLexer.tokenize();
 
     // { "name" : "John" , "age" : 30 , "active" : true } EOF
     assertNotNull(tokens);
@@ -171,8 +171,8 @@ class LexerTest {
   @Test
   @DisplayName("Tokenize with whitespace handling")
   void testWhitespaceHandling() {
-    Lexer lexer = new Lexer("  { } ");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("  { } ");
+    List<Token> tokens = jsonLexer.tokenize();
 
     assertEquals(3, tokens.size());
     assertEquals(LBRACE, tokens.get(0).type());
@@ -183,8 +183,8 @@ class LexerTest {
   @Test
   @DisplayName("Token has correct line and column")
   void testTokenLocation() {
-    Lexer lexer = new Lexer("{ \"key\" }");
-    List<Token> tokens = lexer.tokenize();
+    JsonLexer jsonLexer = new JsonLexer("{ \"key\" }");
+    List<Token> tokens = jsonLexer.tokenize();
 
     // First token should be at line 1, col 1
     Token first = tokens.get(0);
@@ -200,28 +200,28 @@ class LexerTest {
   @Test
   @DisplayName("Error on invalid escape sequence")
   void testInvalidEscapeSequence() {
-    Lexer lexer = new Lexer("\"\\x\"");
-    assertThrows(RuntimeException.class, lexer::tokenize);
+    JsonLexer jsonLexer = new JsonLexer("\"\\x\"");
+    assertThrows(RuntimeException.class, jsonLexer::tokenize);
   }
 
   @Test
   @DisplayName("Error on unterminated string")
   void testUnterminatedString() {
-    Lexer lexer = new Lexer("\"hello");
-    assertThrows(RuntimeException.class, lexer::tokenize);
+    JsonLexer jsonLexer = new JsonLexer("\"hello");
+    assertThrows(RuntimeException.class, jsonLexer::tokenize);
   }
 
   @Test
   @DisplayName("Error on leading zeros in number")
   void testLeadingZeros() {
-    Lexer lexer = new Lexer("007");
-    assertThrows(RuntimeException.class, lexer::tokenize);
+    JsonLexer jsonLexer = new JsonLexer("007");
+    assertThrows(RuntimeException.class, jsonLexer::tokenize);
   }
 
   @Test
   @DisplayName("Error on invalid literal")
   void testInvalidLiteral() {
-    Lexer lexer = new Lexer("trueish");
-    assertThrows(RuntimeException.class, lexer::tokenize);
+    JsonLexer jsonLexer = new JsonLexer("trueish");
+    assertThrows(RuntimeException.class, jsonLexer::tokenize);
   }
 }

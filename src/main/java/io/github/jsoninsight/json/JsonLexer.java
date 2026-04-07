@@ -5,13 +5,13 @@ import java.util.List;
 
 import static io.github.jsoninsight.json.TokenType.*;
 
-public class Lexer {
+public class JsonLexer {
   private final String src;
   private int pos = 0;
   private int line = 1;
   private int col = 1;
 
-  public Lexer(String src) {
+  public JsonLexer(String src) {
     this.src = src;
   }
 
