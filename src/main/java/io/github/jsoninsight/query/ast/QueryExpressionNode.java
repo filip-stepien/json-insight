@@ -14,4 +14,6 @@ public sealed interface QueryExpressionNode extends QueryNode permits
     ExistsNode,
     IsNode,
     FunctionCallNode {
+
+    <T> T accept(QueryExpressionVisitor<T> visitor);
 }
