@@ -198,3 +198,22 @@
     -fx-shape: "";
     -fx-padding: 0;
 }
+
+/* === Dark mode === */
+.root.dark { -fx-background-color: #1e1f24; }
+.root.dark .main-toolbar { -fx-background-color: #2a2c33; -fx-border-color: transparent transparent #3a3c44 transparent; }
+.root.dark .main-toolbar .button { -fx-background-color: #3a3c44; -fx-text-fill: #e6e6e6; }
+.root.dark .main-toolbar .button:hover { -fx-background-color: #4a4d57; }
+.root.dark .main-toolbar .text-field { -fx-background-color: #1e1f24; -fx-text-fill: #e6e6e6; -fx-border-color: #3a3c44; }
+.root.dark .sidebar { -fx-background-color: #23252b; -fx-border-color: transparent #3a3c44 transparent transparent; }
+.root.dark .section-header { -fx-text-fill: #9aa0ac; }
+.root.dark .sidebar-list .list-cell { -fx-text-fill: #d6d6d6; }
+.root.dark .sidebar-list .list-cell:filled:hover { -fx-background-color: #2f3138; }
+.root.dark .preview-pane, .root.dark .results-pane { -fx-background-color: #23252b; }
+.root.dark .json-preview { -fx-background-color: #1a1b20; -fx-text-fill: #e6e6e6; -fx-border-color: #3a3c44; }
+.root.dark .json-preview .content { -fx-background-color: #1a1b20; }
+.root.dark .results-list .list-cell { -fx-text-fill: #d6d6d6; }
+.root.dark .results-list .list-cell:filled:hover { -fx-background-color: #2f3138; }
+.root.dark .status-bar { -fx-background-color: #23252b; -fx-text-fill: #9aa0ac; -fx-border-color: #3a3c44 transparent transparent transparent; }
+.root.dark .label { -fx-text-fill: #d6d6d6; }
+.root.dark .split-pane > .split-pane-divider { -fx-background-color: #3a3c44; }
