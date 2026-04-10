@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="io.github.jsoninsight.ui.controller.QueryBuilderController"
+      styleClass="root"
+      prefWidth="720" prefHeight="460" spacing="10">
+    <padding>
+        <Insets top="14" right="14" bottom="14" left="14"/>
+    </padding>
+
+    <Label text="Kreator zapytań" styleClass="section-header"/>
+
+    <!-- Row: field / operator / value -->
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <Label text="Pole:"/>
+        <ComboBox fx:id="fieldCombo" editable="true" prefWidth="180" promptText="np. address.city"/>
+        <Label text="Operator:"/>
+        <ComboBox fx:id="operatorCombo" prefWidth="150"/>
+        <Label text="Wartość:"/>
+        <TextField fx:id="valueInput" HBox.hgrow="ALWAYS" promptText="wartość lub argument"/>
+    </HBox>
+
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <Button text="Dodaj warunek" onAction="#onAddCondition" styleClass="accent-button"/>
+        <Separator orientation="VERTICAL"/>
+        <Button text="AND" onAction="#onAnd"/>
+        <Button text="OR" onAction="#onOr"/>
+        <Button text="NOT" onAction="#onNot"/>
+        <Button text="(" onAction="#onOpenParen"/>
+        <Button text=")" onAction="#onCloseParen"/>
+        <Separator orientation="VERTICAL"/>
+        <Button text="Cofnij" onAction="#onUndo"/>
+        <Button text="Wyczyść" onAction="#onClear"/>
+    </HBox>
+
+    <Label text="Zapytanie" styleClass="section-header"/>
+    <TextArea fx:id="queryArea" prefRowCount="6" wrapText="true" styleClass="json-preview"
+              promptText="Tu pojawi się złożone zapytanie..."/>
+
+    <HBox spacing="8" alignment="CENTER_RIGHT">
+        <Label fx:id="builderStatus" text="" styleClass="status-bar"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="Waliduj" onAction="#onValidate"/>
+        <Button text="Użyj zapytania" onAction="#onApply" styleClass="search-button"/>
+        <Button text="Anuluj" onAction="#onCancel"/>
+    </HBox>
+</VBox>

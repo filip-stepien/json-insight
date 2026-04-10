@@ -15,11 +15,15 @@
             <Button text="Dodaj plik" onAction="#onAddFile" styleClass="accent-button"/>
             <Button text="Pobierz dokument" onAction="#onExportDocument"/>
             <Button text="Pobierz schemat" onAction="#onExportSchema"/>
+            <Button text="Eksport wyników" onAction="#onExportResults"/>
             <Separator orientation="VERTICAL"/>
             <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="8">
                 <TextField fx:id="queryInput" promptText="Wpisz zapytanie..." HBox.hgrow="ALWAYS"/>
+                <Button text="Kreator" onAction="#onOpenQueryBuilder"/>
                 <Button text="Szukaj" onAction="#onSearch" styleClass="search-button"/>
             </HBox>
+            <Separator orientation="VERTICAL"/>
+            <ToggleButton fx:id="darkModeToggle" text="Dark" onAction="#onToggleDarkMode"/>
         </ToolBar>
     </top>
 
@@ -69,6 +73,12 @@
                     </padding>
                     <Label text="Wyniki wyszukiwania" styleClass="section-header"/>
                     <ListView fx:id="searchResultsList" VBox.vgrow="ALWAYS" styleClass="results-list"/>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <padding><Insets top="6"/></padding>
+                        <Button fx:id="prevPageBtn" text="◀" onAction="#onPrevPage"/>
+                        <Label fx:id="pageLabel" text="—"/>
+                        <Button fx:id="nextPageBtn" text="▶" onAction="#onNextPage"/>
+                    </HBox>
                 </VBox>
 
             </SplitPane>
