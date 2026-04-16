@@ -12,10 +12,9 @@ module io.github.jsoninsight {
   exports io.github.jsoninsight.query.lexer.impl;
   exports io.github.jsoninsight.query.parser;
   exports io.github.jsoninsight.query.parser.impl;
-  exports io.github.jsoninsight.query.ast;
-
-  exports io.github.jsoninsight.query.ast.node;
-  exports io.github.jsoninsight.query.ast.operator;
+  exports io.github.jsoninsight.query.ast.predicate;
+  exports io.github.jsoninsight.query.ast.predicate.node;
+  exports io.github.jsoninsight.query.ast.predicate.operator;
   exports io.github.jsoninsight.model;
   exports io.github.jsoninsight.service;
 }

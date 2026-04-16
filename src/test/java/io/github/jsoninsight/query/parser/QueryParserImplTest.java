@@ -1,10 +1,10 @@
 package io.github.jsoninsight.query.parser;
 
-import io.github.jsoninsight.query.ast.QueryExpressionNode;
-import io.github.jsoninsight.query.ast.node.*;
-import io.github.jsoninsight.query.ast.operator.JsonType;
-import io.github.jsoninsight.query.ast.operator.ComparisonOperator;
-import io.github.jsoninsight.query.ast.operator.LogicalOperator;
+import io.github.jsoninsight.query.ast.predicate.QueryPredicateExpression;
+import io.github.jsoninsight.query.ast.predicate.node.*;
+import io.github.jsoninsight.query.ast.predicate.operator.JsonType;
+import io.github.jsoninsight.query.ast.predicate.operator.ComparisonOperator;
+import io.github.jsoninsight.query.ast.predicate.operator.LogicalOperator;
 import io.github.jsoninsight.query.lexer.impl.QueryLexerImpl;
 import io.github.jsoninsight.query.parser.impl.QueryParserImpl;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ class QueryParserImplTest {
     private static final QueryLexerImpl lexer = new QueryLexerImpl();
     private static final QueryParserImpl parser = new QueryParserImpl();
 
-    private QueryExpressionNode parse(String input) {
+    private QueryPredicateExpression parse(String input) {
         return parser.parse(lexer.tokenize(input));
     }
 

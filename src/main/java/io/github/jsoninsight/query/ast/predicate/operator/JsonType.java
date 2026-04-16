@@ -1,4 +1,4 @@
-package io.github.jsoninsight.query.ast.operator;
+package io.github.jsoninsight.query.ast.predicate.operator;
 
 public enum JsonType {
     STRING,

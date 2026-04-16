@@ -1,23 +1,23 @@
 package io.github.jsoninsight.query.evaluator.impl;
 
 import io.github.jsoninsight.json.JsonNode;
-import io.github.jsoninsight.query.ast.QueryExpressionNode;
-import io.github.jsoninsight.query.ast.QueryExpressionVisitor;
-import io.github.jsoninsight.query.ast.QueryLiteralNode;
-import io.github.jsoninsight.query.ast.node.*;
-import io.github.jsoninsight.query.ast.operator.ComparisonOperator;
+import io.github.jsoninsight.query.ast.predicate.QueryPredicateExpression;
+import io.github.jsoninsight.query.ast.predicate.QueryPredicateExpressionVisitor;
+import io.github.jsoninsight.query.ast.predicate.QueryPredicateLiteral;
+import io.github.jsoninsight.query.ast.predicate.node.*;
+import io.github.jsoninsight.query.ast.predicate.operator.ComparisonOperator;
 import io.github.jsoninsight.query.evaluator.QueryEvaluator;
 import io.github.jsoninsight.query.evaluator.QueryEvaluatorException;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 
-public class QueryEvaluatorImpl implements QueryEvaluator, QueryExpressionVisitor<Boolean> {
+public class QueryEvaluatorImpl implements QueryEvaluator, QueryPredicateExpressionVisitor<Boolean> {
 
-    private final QueryExpressionNode query;
+    private final QueryPredicateExpression query;
     private JsonNode document;
 
-    public QueryEvaluatorImpl(QueryExpressionNode query) {
+    public QueryEvaluatorImpl(QueryPredicateExpression query) {
         this.query = query;
     }
 
@@ -81,7 +81,7 @@ public class QueryEvaluatorImpl implements QueryEvaluator, QueryExpressionVisito
         };
     }
 
-    private boolean compare(JsonNode value, ComparisonOperator operator, QueryLiteralNode literal) {
+    private boolean compare(JsonNode value, ComparisonOperator operator, QueryPredicateLiteral literal) {
         return switch (literal) {
             case StringLiteralNode stringLiteral -> compareString(value, operator, stringLiteral.value());
             case NumberLiteralNode numberLiteral -> compareNumber(value, operator, numberLiteral.value());

@@ -3,7 +3,7 @@ package io.github.jsoninsight.query.evaluator;
 import io.github.jsoninsight.json.JsonNode;
 import io.github.jsoninsight.json.JsonParser;
 import io.github.jsoninsight.json.JsonLexer;
-import io.github.jsoninsight.query.ast.QueryExpressionNode;
+import io.github.jsoninsight.query.ast.predicate.QueryPredicateExpression;
 import io.github.jsoninsight.query.evaluator.impl.QueryEvaluatorImpl;
 import io.github.jsoninsight.query.lexer.impl.QueryLexerImpl;
 import io.github.jsoninsight.query.parser.impl.QueryParserImpl;
@@ -17,7 +17,7 @@ class QueryEvaluatorImplTest {
     private static final QueryParserImpl queryParser = new QueryParserImpl();
 
     private QueryEvaluator evaluatorFor(String query) {
-        QueryExpressionNode ast = queryParser.parse(queryLexer.tokenize(query));
+        QueryPredicateExpression ast = queryParser.parse(queryLexer.tokenize(query));
         return new QueryEvaluatorImpl(ast);
     }
 

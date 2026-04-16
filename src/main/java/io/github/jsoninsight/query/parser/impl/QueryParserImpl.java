@@ -1,13 +1,13 @@
 package io.github.jsoninsight.query.parser.impl;
 
-import io.github.jsoninsight.query.ast.QueryArgNode;
-import io.github.jsoninsight.query.ast.QueryExpressionNode;
-import io.github.jsoninsight.query.ast.QueryLiteralNode;
+import io.github.jsoninsight.query.ast.predicate.QueryPredicateArg;
+import io.github.jsoninsight.query.ast.predicate.QueryPredicateExpression;
+import io.github.jsoninsight.query.ast.predicate.QueryPredicateLiteral;
 import java.math.BigDecimal;
-import io.github.jsoninsight.query.ast.node.*;
-import io.github.jsoninsight.query.ast.operator.ComparisonOperator;
-import io.github.jsoninsight.query.ast.operator.JsonType;
-import io.github.jsoninsight.query.ast.operator.LogicalOperator;
+import io.github.jsoninsight.query.ast.predicate.node.*;
+import io.github.jsoninsight.query.ast.predicate.operator.ComparisonOperator;
+import io.github.jsoninsight.query.ast.predicate.operator.JsonType;
+import io.github.jsoninsight.query.ast.predicate.operator.LogicalOperator;
 import io.github.jsoninsight.query.lexer.QueryToken;
 import io.github.jsoninsight.query.lexer.QueryTokenType;
 import io.github.jsoninsight.query.parser.QueryParser;
@@ -80,7 +80,7 @@ public class QueryParserImpl implements QueryParser {
         };
     }
 
-    private QueryLiteralNode parseValue(QueryParserState state) {
+    private QueryPredicateLiteral parseValue(QueryParserState state) {
         return switch (state.current().type()) {
             case STRING -> new StringLiteralNode(state.consume().value());
 
@@ -103,7 +103,7 @@ public class QueryParserImpl implements QueryParser {
         };
     }
 
-    private QueryArgNode parseArg(QueryParserState state) {
+    private QueryPredicateArg parseArg(QueryParserState state) {
         return switch (state.current().type()) {
             case STRING -> new StringLiteralNode(state.consume().value());
 
@@ -128,11 +128,11 @@ public class QueryParserImpl implements QueryParser {
         };
     }
 
-    private QueryExpressionNode parseFunctionCall(QueryParserState state) {
+    private QueryPredicateExpression parseFunctionCall(QueryParserState state) {
         QueryToken name = state.consume(QueryTokenType.IDENTIFIER);
         state.consume(QueryTokenType.LPAREN);
 
-        List<QueryArgNode> args = new ArrayList<>();
+        List<QueryPredicateArg> args = new ArrayList<>();
         if (state.current().type() != QueryTokenType.RPAREN) {
             do {
                 args.add(parseArg(state));
@@ -143,7 +143,7 @@ public class QueryParserImpl implements QueryParser {
         return new FunctionCallNode(name.value(), args);
     }
 
-    private QueryExpressionNode parsePathExpression(QueryParserState state) {
+    private QueryPredicateExpression parsePathExpression(QueryParserState state) {
         JsonPathNode path = new JsonPathNode(state.consume(QueryTokenType.JSON_PATH).value());
         QueryToken next = state.current();
 
@@ -184,9 +184,9 @@ public class QueryParserImpl implements QueryParser {
         };
     }
 
-    private QueryExpressionNode parsePrimary(QueryParserState state) {
+    private QueryPredicateExpression parsePrimary(QueryParserState state) {
         if (state.tryConsume(QueryTokenType.LPAREN)) {
-            QueryExpressionNode inner = parseOr(state);
+            QueryPredicateExpression inner = parseOr(state);
             state.consume(QueryTokenType.RPAREN);
             return inner;
         }
@@ -206,7 +206,7 @@ public class QueryParserImpl implements QueryParser {
         );
     }
 
-    private QueryExpressionNode parseNot(QueryParserState state) {
+    private QueryPredicateExpression parseNot(QueryParserState state) {
         if (state.tryConsume(QueryTokenType.NOT)) {
             return new NotNode(parseNot(state));
         }
@@ -214,22 +214,22 @@ public class QueryParserImpl implements QueryParser {
         return parsePrimary(state);
     }
 
-    private QueryExpressionNode parseAnd(QueryParserState state) {
-        QueryExpressionNode left = parseNot(state);
+    private QueryPredicateExpression parseAnd(QueryParserState state) {
+        QueryPredicateExpression left = parseNot(state);
 
         while (state.tryConsume(QueryTokenType.AND)) {
-            QueryExpressionNode right = parseNot(state);
+            QueryPredicateExpression right = parseNot(state);
             left = new LogicalNode(left, LogicalOperator.AND, right);
         }
 
         return left;
     }
 
-    private QueryExpressionNode parseOr(QueryParserState state) {
-        QueryExpressionNode left = parseAnd(state);
+    private QueryPredicateExpression parseOr(QueryParserState state) {
+        QueryPredicateExpression left = parseAnd(state);
 
         while (state.tryConsume(QueryTokenType.OR)) {
-            QueryExpressionNode right = parseAnd(state);
+            QueryPredicateExpression right = parseAnd(state);
             left = new LogicalNode(left, LogicalOperator.OR, right);
         }
 
@@ -237,13 +237,13 @@ public class QueryParserImpl implements QueryParser {
     }
 
     @Override
-    public QueryExpressionNode parse(List<QueryToken> tokens) {
+    public QueryPredicateExpression parse(List<QueryToken> tokens) {
         if (tokens == null || tokens.isEmpty()) {
             throw new IllegalArgumentException("Token list cannot be null or empty");
         }
 
         QueryParserState state = new QueryParserState(tokens);
-        QueryExpressionNode result = parseOr(state);
+        QueryPredicateExpression result = parseOr(state);
 
         state.consume(QueryTokenType.EOF);
         return result;
