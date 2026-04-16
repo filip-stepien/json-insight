@@ -2,7 +2,7 @@ package io.github.jsoninsight.query.evaluator;
 
 import io.github.jsoninsight.json.JsonNode;
 import io.github.jsoninsight.json.JsonParser;
-import io.github.jsoninsight.json.Lexer;
+import io.github.jsoninsight.json.JsonLexer;
 import io.github.jsoninsight.query.ast.QueryExpressionNode;
 import io.github.jsoninsight.query.evaluator.impl.QueryEvaluatorImpl;
 import io.github.jsoninsight.query.lexer.impl.QueryLexerImpl;
@@ -22,7 +22,7 @@ class QueryEvaluatorImplTest {
     }
 
     private JsonNode json(String raw) {
-        return new JsonParser(new Lexer(raw).tokenize()).parse();
+        return new JsonParser(new JsonLexer(raw).tokenize()).parse();
     }
 
     // EXISTS
