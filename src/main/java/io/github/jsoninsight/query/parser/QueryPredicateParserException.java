@@ -4,11 +4,11 @@ import io.github.jsoninsight.query.lexer.QueryToken;
 import lombok.Getter;
 
 @Getter
-public class QueryParserException extends RuntimeException {
+public class QueryPredicateParserException extends RuntimeException {
     private final QueryToken token;
     private final int position;
 
-    public QueryParserException(String message, QueryToken token, int position) {
+    public QueryPredicateParserException(String message, QueryToken token, int position) {
         super(message);
         this.token = token;
         this.position = position;

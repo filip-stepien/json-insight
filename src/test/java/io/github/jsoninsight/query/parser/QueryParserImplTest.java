@@ -6,7 +6,7 @@ import io.github.jsoninsight.query.ast.predicate.operator.JsonType;
 import io.github.jsoninsight.query.ast.predicate.operator.ComparisonOperator;
 import io.github.jsoninsight.query.ast.predicate.operator.LogicalOperator;
 import io.github.jsoninsight.query.lexer.impl.QueryLexerImpl;
-import io.github.jsoninsight.query.parser.impl.QueryParserImpl;
+import io.github.jsoninsight.query.parser.impl.QueryPredicateParserImpl;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -14,10 +14,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class QueryParserImplTest {
+class QueryPredicateParserImplTest {
 
     private static final QueryLexerImpl lexer = new QueryLexerImpl();
-    private static final QueryParserImpl parser = new QueryParserImpl();
+    private static final QueryPredicateParserImpl parser = new QueryPredicateParserImpl();
 
     private QueryPredicateExpression parse(String input) {
         return parser.parse(lexer.tokenize(input));
@@ -196,16 +196,16 @@ class QueryParserImplTest {
 
     @Test
     void throwsForMissingOperatorAfterPath() {
-        assertThrows(QueryParserException.class, () -> parse(".age"));
+        assertThrows(QueryPredicateParserException.class, () -> parse(".age"));
     }
 
     @Test
     void throwsForMissingClosingParen() {
-        assertThrows(QueryParserException.class, () -> parse("(.age == 25"));
+        assertThrows(QueryPredicateParserException.class, () -> parse("(.age == 25"));
     }
 
     @Test
     void throwsForUnexpectedToken() {
-        assertThrows(QueryParserException.class, () -> parse("== 25"));
+        assertThrows(QueryPredicateParserException.class, () -> parse("== 25"));
     }
 }

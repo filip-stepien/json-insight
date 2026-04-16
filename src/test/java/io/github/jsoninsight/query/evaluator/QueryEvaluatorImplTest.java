@@ -6,7 +6,7 @@ import io.github.jsoninsight.json.JsonLexer;
 import io.github.jsoninsight.query.ast.predicate.QueryPredicateExpression;
 import io.github.jsoninsight.query.evaluator.impl.QueryEvaluatorImpl;
 import io.github.jsoninsight.query.lexer.impl.QueryLexerImpl;
-import io.github.jsoninsight.query.parser.impl.QueryParserImpl;
+import io.github.jsoninsight.query.parser.impl.QueryPredicateParserImpl;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class QueryEvaluatorImplTest {
 
     private static final QueryLexerImpl queryLexer = new QueryLexerImpl();
-    private static final QueryParserImpl queryParser = new QueryParserImpl();
+    private static final QueryPredicateParserImpl queryParser = new QueryPredicateParserImpl();
 
     private QueryEvaluator evaluatorFor(String query) {
         QueryPredicateExpression ast = queryParser.parse(queryLexer.tokenize(query));

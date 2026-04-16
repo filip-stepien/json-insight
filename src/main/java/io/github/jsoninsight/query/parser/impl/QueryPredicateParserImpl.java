@@ -10,19 +10,19 @@ import io.github.jsoninsight.query.ast.predicate.operator.JsonType;
 import io.github.jsoninsight.query.ast.predicate.operator.LogicalOperator;
 import io.github.jsoninsight.query.lexer.QueryToken;
 import io.github.jsoninsight.query.lexer.QueryTokenType;
-import io.github.jsoninsight.query.parser.QueryParser;
-import io.github.jsoninsight.query.parser.QueryParserException;
+import io.github.jsoninsight.query.parser.QueryPredicateParser;
+import io.github.jsoninsight.query.parser.QueryPredicateParserException;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class QueryParserImpl implements QueryParser {
+public class QueryPredicateParserImpl implements QueryPredicateParser {
 
-    private static class QueryParserState {
+    private static class QueryPredicateParserState {
         private final List<QueryToken> tokens;
         private int pos;
 
-        QueryParserState(List<QueryToken> tokens) {
+        QueryPredicateParserState(List<QueryToken> tokens) {
             this.tokens = tokens;
             this.pos = 0;
         }
@@ -38,7 +38,7 @@ public class QueryParserImpl implements QueryParser {
         QueryToken consume(QueryTokenType expected) {
             QueryToken token = current();
             if (token.type() != expected) {
-                throw new QueryParserException(
+                throw new QueryPredicateParserException(
                     "Expected " + expected + " but got " + token.type(),
                     token,
                     pos
@@ -72,7 +72,7 @@ public class QueryParserImpl implements QueryParser {
 
             case LTE -> ComparisonOperator.LTE;
 
-            default -> throw new QueryParserException(
+            default -> throw new QueryPredicateParserException(
                 "Expected a comparison operator",
                 token,
                 0
@@ -80,7 +80,7 @@ public class QueryParserImpl implements QueryParser {
         };
     }
 
-    private QueryPredicateLiteral parseValue(QueryParserState state) {
+    private QueryPredicateLiteral parseValue(QueryPredicateParserState state) {
         return switch (state.current().type()) {
             case STRING -> new StringLiteralNode(state.consume().value());
 
@@ -95,7 +95,7 @@ public class QueryParserImpl implements QueryParser {
                 yield new NullLiteralNode();
             }
 
-            default -> throw new QueryParserException(
+            default -> throw new QueryPredicateParserException(
                 "Expected a literal rightValue",
                 state.current(),
                 state.pos
@@ -103,7 +103,7 @@ public class QueryParserImpl implements QueryParser {
         };
     }
 
-    private QueryPredicateArg parseArg(QueryParserState state) {
+    private QueryPredicateArg parseArg(QueryPredicateParserState state) {
         return switch (state.current().type()) {
             case STRING -> new StringLiteralNode(state.consume().value());
 
@@ -120,7 +120,7 @@ public class QueryParserImpl implements QueryParser {
                 yield new NullLiteralNode();
             }
 
-            default -> throw new QueryParserException(
+            default -> throw new QueryPredicateParserException(
                 "Expected a rightValue or pathValue argument",
                 state.current(),
                 state.pos
@@ -128,7 +128,7 @@ public class QueryParserImpl implements QueryParser {
         };
     }
 
-    private QueryPredicateExpression parseFunctionCall(QueryParserState state) {
+    private QueryPredicateExpression parseFunctionCall(QueryPredicateParserState state) {
         QueryToken name = state.consume(QueryTokenType.IDENTIFIER);
         state.consume(QueryTokenType.LPAREN);
 
@@ -143,7 +143,7 @@ public class QueryParserImpl implements QueryParser {
         return new FunctionCallNode(name.value(), args);
     }
 
-    private QueryPredicateExpression parsePathExpression(QueryParserState state) {
+    private QueryPredicateExpression parsePathExpression(QueryPredicateParserState state) {
         JsonPathNode path = new JsonPathNode(state.consume(QueryTokenType.JSON_PATH).value());
         QueryToken next = state.current();
 
@@ -166,7 +166,7 @@ public class QueryParserImpl implements QueryParser {
                 try {
                     jsonType = JsonType.valueOf(typeToken.value().toUpperCase());
                 } catch (IllegalArgumentException e) {
-                    throw new QueryParserException(
+                    throw new QueryPredicateParserException(
                         "Unknown dataType: " + typeToken.value(),
                         typeToken,
                         state.pos
@@ -176,7 +176,7 @@ public class QueryParserImpl implements QueryParser {
                 yield new IsNode(path, jsonType);
             }
 
-            default -> throw new QueryParserException(
+            default -> throw new QueryPredicateParserException(
                 "Expected operator, EXISTS or IS after pathValue",
                 next,
                 state.pos
@@ -184,7 +184,7 @@ public class QueryParserImpl implements QueryParser {
         };
     }
 
-    private QueryPredicateExpression parsePrimary(QueryParserState state) {
+    private QueryPredicateExpression parsePrimary(QueryPredicateParserState state) {
         if (state.tryConsume(QueryTokenType.LPAREN)) {
             QueryPredicateExpression inner = parseOr(state);
             state.consume(QueryTokenType.RPAREN);
@@ -199,14 +199,14 @@ public class QueryParserImpl implements QueryParser {
             return parsePathExpression(state);
         }
 
-        throw new QueryParserException(
+        throw new QueryPredicateParserException(
             "Unexpected token " + state.current().type(),
             state.current(),
             state.pos
         );
     }
 
-    private QueryPredicateExpression parseNot(QueryParserState state) {
+    private QueryPredicateExpression parseNot(QueryPredicateParserState state) {
         if (state.tryConsume(QueryTokenType.NOT)) {
             return new NotNode(parseNot(state));
         }
@@ -214,7 +214,7 @@ public class QueryParserImpl implements QueryParser {
         return parsePrimary(state);
     }
 
-    private QueryPredicateExpression parseAnd(QueryParserState state) {
+    private QueryPredicateExpression parseAnd(QueryPredicateParserState state) {
         QueryPredicateExpression left = parseNot(state);
 
         while (state.tryConsume(QueryTokenType.AND)) {
@@ -225,7 +225,7 @@ public class QueryParserImpl implements QueryParser {
         return left;
     }
 
-    private QueryPredicateExpression parseOr(QueryParserState state) {
+    private QueryPredicateExpression parseOr(QueryPredicateParserState state) {
         QueryPredicateExpression left = parseAnd(state);
 
         while (state.tryConsume(QueryTokenType.OR)) {
@@ -242,7 +242,7 @@ public class QueryParserImpl implements QueryParser {
             throw new IllegalArgumentException("Token list cannot be null or empty");
         }
 
-        QueryParserState state = new QueryParserState(tokens);
+        QueryPredicateParserState state = new QueryPredicateParserState(tokens);
         QueryPredicateExpression result = parseOr(state);
 
         state.consume(QueryTokenType.EOF);

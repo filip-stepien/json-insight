@@ -5,7 +5,7 @@ import io.github.jsoninsight.query.lexer.QueryToken;
 
 import java.util.List;
 
-public interface QueryParser {
+public interface QueryPredicateParser {
 
     QueryPredicateExpression parse(List<QueryToken> tokens);
 }
