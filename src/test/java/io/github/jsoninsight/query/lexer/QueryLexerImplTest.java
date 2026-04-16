@@ -285,6 +285,64 @@ class QueryLexerImplTest {
         assertEquals(QueryTokenType.RPAREN, tokens.get(5).type());
     }
 
+    // SELECT, FROM, WHERE, ASTERISK
+
+    @Test
+    void recognizesKeywordSelect() {
+        List<QueryToken> tokens = lexer.tokenize("SELECT");
+        assertEquals(QueryTokenType.SELECT, tokens.getFirst().type());
+    }
+
+    @Test
+    void recognizesKeywordSelectCaseInsensitive() {
+        List<QueryToken> tokens = lexer.tokenize("select");
+        assertEquals(QueryTokenType.SELECT, tokens.getFirst().type());
+    }
+
+    @Test
+    void recognizesKeywordFrom() {
+        List<QueryToken> tokens = lexer.tokenize("FROM");
+        assertEquals(QueryTokenType.FROM, tokens.getFirst().type());
+    }
+
+    @Test
+    void recognizesKeywordFromCaseInsensitive() {
+        List<QueryToken> tokens = lexer.tokenize("from");
+        assertEquals(QueryTokenType.FROM, tokens.getFirst().type());
+    }
+
+    @Test
+    void recognizesKeywordWhere() {
+        List<QueryToken> tokens = lexer.tokenize("WHERE");
+        assertEquals(QueryTokenType.WHERE, tokens.getFirst().type());
+    }
+
+    @Test
+    void recognizesKeywordWhereCaseInsensitive() {
+        List<QueryToken> tokens = lexer.tokenize("where");
+        assertEquals(QueryTokenType.WHERE, tokens.getFirst().type());
+    }
+
+    @Test
+    void recognizesAsterisk() {
+        List<QueryToken> tokens = lexer.tokenize("*");
+        assertEquals(QueryTokenType.ASTERISK, tokens.getFirst().type());
+    }
+
+    @Test
+    void tokenizesFullStatement() {
+        List<QueryToken> tokens = lexer.tokenize("SELECT * FROM users WHERE .active == true");
+        assertEquals(QueryTokenType.SELECT, tokens.get(0).type());
+        assertEquals(QueryTokenType.ASTERISK, tokens.get(1).type());
+        assertEquals(QueryTokenType.FROM, tokens.get(2).type());
+        assertEquals(QueryTokenType.IDENTIFIER, tokens.get(3).type());
+        assertEquals("users", tokens.get(3).value());
+        assertEquals(QueryTokenType.WHERE, tokens.get(4).type());
+        assertEquals(QueryTokenType.JSON_PATH, tokens.get(5).type());
+        assertEquals(QueryTokenType.EQ, tokens.get(6).type());
+        assertEquals(QueryTokenType.BOOLEAN, tokens.get(7).type());
+    }
+
     // exceptions
 
     @Test
