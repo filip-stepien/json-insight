@@ -17,6 +17,8 @@ module io.github.jsoninsight {
   exports io.github.jsoninsight.query.ast.predicate.operator;
   exports io.github.jsoninsight.query.ast.statement;
   exports io.github.jsoninsight.query.ast.statement.clause;
+  exports io.github.jsoninsight.query.evaluator;
+  exports io.github.jsoninsight.query.evaluator.impl;
   exports io.github.jsoninsight.model;
   exports io.github.jsoninsight.service;
 }
