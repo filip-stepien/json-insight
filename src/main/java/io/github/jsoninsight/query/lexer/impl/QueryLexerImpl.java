@@ -130,6 +130,9 @@ public class QueryLexerImpl implements QueryLexer {
             case "IS" -> new QueryToken(QueryTokenType.IS, word);
             case "TRUE", "FALSE" -> new QueryToken(QueryTokenType.BOOLEAN, word);
             case "NULL" -> new QueryToken(QueryTokenType.NULL, word);
+            case "SELECT" -> new QueryToken(QueryTokenType.SELECT, word);
+            case "FROM" -> new QueryToken(QueryTokenType.FROM, word);
+            case "WHERE" -> new QueryToken(QueryTokenType.WHERE, word);
             default -> new QueryToken(QueryTokenType.IDENTIFIER, word);
         };
     }
@@ -276,6 +279,10 @@ public class QueryLexerImpl implements QueryLexer {
             case ',':
                 state.pos++;
                 return new QueryToken(QueryTokenType.COMMA, ",");
+
+            case '*':
+                state.pos++;
+                return new QueryToken(QueryTokenType.ASTERISK, "*");
 
             default:
                 throw new QueryLexerException("Unknown character", currentChar, state.pos);

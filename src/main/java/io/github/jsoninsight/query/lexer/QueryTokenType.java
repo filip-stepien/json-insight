@@ -21,5 +21,9 @@ public enum QueryTokenType {
     LPAREN,
     RPAREN,
     COMMA,
+    SELECT,
+    FROM,
+    WHERE,
+    ASTERISK,
     EOF
 }
