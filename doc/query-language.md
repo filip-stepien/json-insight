@@ -1,10 +1,51 @@
 # Język zapytań JSON
 
-Ten dokument opisuje aktualną składnię wspieraną przez lexer i parser.
+## Struktura zapytania
 
-## Ogólna postać zapytania
+```sql
+SELECT <pola> FROM <kolekcja> [WHERE <warunek>]
+```
 
-Zapytanie jest wyrażeniem logicznym zbudowanym z:
+Przykłady:
+
+```sql
+SELECT * FROM users
+SELECT .name, .age FROM users
+SELECT .address.city FROM orders WHERE .active == true
+SELECT .name, .age FROM users WHERE .age >= 18 AND .active == true
+```
+
+## SELECT
+
+Klauzula SELECT określa, które pola mają być zwrócone.
+
+### Wildcard
+
+```sql
+SELECT * FROM users
+```
+
+### Lista pól
+
+Pola są ścieżkami JSON oddzielonymi przecinkami:
+
+```sql
+SELECT .name FROM users
+SELECT .name, .age, .address.city FROM users
+```
+
+## FROM
+
+Klauzula FROM wskazuje nazwę kolekcji:
+
+```sql
+SELECT * FROM users
+SELECT * FROM orders
+```
+
+## WHERE
+
+Klauzula WHERE filtruje dokumenty na podstawie wyrażenia logicznego zbudowanego z:
 - porównań,
 - operatorów `EXISTS` i `IS`,
 - wywołań funkcji,
@@ -14,12 +55,11 @@ Zapytanie jest wyrażeniem logicznym zbudowanym z:
 Przykłady:
 
 ```sql
-.age == 25
-.name EXISTS
-.name IS STRING
-contains(.tags, "admin")
-NOT .deletedAt EXISTS
-(.age >= 18 AND .active == true) OR .role == "admin"
+SELECT * FROM users WHERE .age == 25
+SELECT * FROM users WHERE .name EXISTS
+SELECT * FROM users WHERE .name IS STRING
+SELECT * FROM users WHERE NOT .deletedAt EXISTS
+SELECT * FROM users WHERE (.age >= 18 AND .active == true) OR .role == "admin"
 ```
 
 ## Ścieżki JSON
@@ -37,10 +77,6 @@ Poprawne przykłady:
 ._id
 .user_1.email
 ```
-
-Aktualne ograniczenia:
-- brak składni indeksowania tablic, np. `.items[0]`,
-- brak składni z wildcardami.
 
 ## Literały
 
@@ -61,7 +97,7 @@ false
 null
 ```
 
-Słowa kluczowe są nierozróżniające wielkości liter, więc `and`, `AND` i `And` są traktowane tak samo.
+W słowach kluczowych wielkość liter nie jest rozróżniana, tj. `and`, `AND` i `And` są traktowane tak samo.
 
 ## Operatory porównania
 
@@ -104,10 +140,6 @@ Sprawdza, czy ścieżka istnieje.
 .address.city EXISTS
 NOT .deletedAt EXISTS
 ```
-
-Uwaga:
-- `NOT` jest operatorem prefiksowym,
-- aktualna składnia to `NOT .name EXISTS`, a nie `.name NOT EXISTS`.
 
 ### IS
 
@@ -152,53 +184,24 @@ matches(.code, "[0-9]+")
 isEmpty()
 ```
 
-Aktualne ograniczenie parsera:
-- wywołanie funkcji jest samodzielnym wyrażeniem,
-- parser nie wspiera jeszcze składni typu `size(.tags) > 3`.
-
-## Logika
-
-Przykłady:
-
-```sql
-.name EXISTS AND .age > 25
-.role == "admin" OR .role == "moderator"
-NOT .name EXISTS
-(.age > 18 AND .active == true) OR .role == "admin"
-```
-
-Pierwszeństwo operatorów:
-1. `NOT`
-2. `AND`
-3. `OR`
-
-## Zagnieżdżone pola
-
-```sql
-.address.city == "Warsaw"
-.address.zip EXISTS
-.contact.phone IS STRING
-contains(.address.tags, "home")
-```
-
 ## Przykłady pełnych zapytań
 
 ```sql
-.age >= 18 AND .active == true
+SELECT * FROM users WHERE .age >= 18 AND .active == true
 ```
 
 ```sql
-.role == "admin" OR .role == "moderator"
+SELECT .name, .role FROM users WHERE .role == "admin" OR .role == "moderator"
 ```
 
 ```sql
-.email EXISTS AND .email IS STRING AND NOT .deletedAt EXISTS
+SELECT * FROM users WHERE .email EXISTS AND .email IS STRING AND NOT .deletedAt EXISTS
 ```
 
 ```sql
-.tags IS ARRAY AND contains(.tags, "admin")
+SELECT .name, .address.city FROM users WHERE .tags IS ARRAY AND contains(.tags, "admin")
 ```
 
 ```sql
-(.score >= 80 AND .level IS NUMBER) OR .role == "admin"
+SELECT * FROM orders WHERE (.score >= 80 AND .level IS NUMBER) OR .role == "admin"
 ```

@@ -1,11 +1,10 @@
 package io.github.jsoninsight.query.parser;
 
-import io.github.jsoninsight.query.ast.QueryExpressionNode;
 import io.github.jsoninsight.query.lexer.QueryToken;
 
 import java.util.List;
 
-public interface QueryParser {
+public interface QueryParser<T> {
 
-    QueryExpressionNode parse(List<QueryToken> tokens);
+    T parse(List<QueryToken> tokens);
 }
