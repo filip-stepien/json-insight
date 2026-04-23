@@ -38,7 +38,7 @@
                     <Insets top="12" right="12" bottom="12" left="12"/>
                 </padding>
 
-                <Label text="Kategorie" styleClass="section-header"/>
+                <Label text="Kolekcje" styleClass="section-header"/>
                 <ListView fx:id="categoryList" VBox.vgrow="ALWAYS" styleClass="sidebar-list"/>
 
                 <Separator>

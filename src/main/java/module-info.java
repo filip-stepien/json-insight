@@ -3,6 +3,7 @@ module io.github.jsoninsight {
   requires javafx.fxml;
   requires static lombok;
   requires com.google.gson;
+  requires java.sql;
 
   opens io.github.jsoninsight.ui to javafx.fxml;
   opens io.github.jsoninsight.ui.controller to javafx.fxml;
