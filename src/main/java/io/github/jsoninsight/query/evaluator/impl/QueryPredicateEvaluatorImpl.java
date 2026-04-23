@@ -6,20 +6,15 @@ import io.github.jsoninsight.query.ast.predicate.QueryPredicateExpressionVisitor
 import io.github.jsoninsight.query.ast.predicate.QueryPredicateLiteral;
 import io.github.jsoninsight.query.ast.predicate.node.*;
 import io.github.jsoninsight.query.ast.predicate.operator.ComparisonOperator;
-import io.github.jsoninsight.query.evaluator.QueryEvaluator;
-import io.github.jsoninsight.query.evaluator.QueryEvaluatorException;
+import io.github.jsoninsight.query.evaluator.QueryPredicateEvaluator;
+import io.github.jsoninsight.query.evaluator.QueryPredicateEvaluatorException;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 
-public class QueryEvaluatorImpl implements QueryEvaluator, QueryPredicateExpressionVisitor<Boolean> {
+public class QueryPredicateEvaluatorImpl implements QueryPredicateEvaluator, QueryPredicateExpressionVisitor<Boolean> {
 
-    private final QueryPredicateExpression query;
     private JsonNode document;
-
-    public QueryEvaluatorImpl(QueryPredicateExpression query) {
-        this.query = query;
-    }
 
     private boolean applyOperator(int compareResult, ComparisonOperator operator) {
         return switch (operator) {
@@ -40,7 +35,7 @@ public class QueryEvaluatorImpl implements QueryEvaluator, QueryPredicateExpress
         return switch (operator) {
             case EQ -> documentStringValue.equals(literal);
             case NEQ -> !documentStringValue.equals(literal);
-            default -> throw new QueryEvaluatorException(
+            default -> throw new QueryPredicateEvaluatorException(
                 "Operator " + operator + " is not supported for string values"
             );
         };
@@ -63,7 +58,7 @@ public class QueryEvaluatorImpl implements QueryEvaluator, QueryPredicateExpress
         return switch (operator) {
             case EQ -> documentBooleanValue == literal;
             case NEQ -> documentBooleanValue != literal;
-            default -> throw new QueryEvaluatorException(
+            default -> throw new QueryPredicateEvaluatorException(
                 "Operator " + operator + " is not supported for boolean values"
             );
         };
@@ -75,7 +70,7 @@ public class QueryEvaluatorImpl implements QueryEvaluator, QueryPredicateExpress
         return switch (operator) {
             case EQ -> isNull;
             case NEQ -> !isNull;
-            default -> throw new QueryEvaluatorException(
+            default -> throw new QueryPredicateEvaluatorException(
                 "Operator " + operator + " is not supported for null values"
             );
         };
@@ -122,9 +117,9 @@ public class QueryEvaluatorImpl implements QueryEvaluator, QueryPredicateExpress
     }
 
     @Override
-    public boolean evaluate(JsonNode document) {
+    public boolean evaluate(JsonNode document, QueryPredicateExpression predicate) {
         this.document = document;
-        return query.accept(this);
+        return predicate.accept(this);
     }
 
     @Override
