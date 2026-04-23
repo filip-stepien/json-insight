@@ -25,4 +25,6 @@ public interface DocumentService {
     List<Category> getAllCategories();
 
     void addCategory(Category category);
+
+    void renameCategory(int categoryId, String newName);
 }

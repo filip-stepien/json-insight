@@ -67,8 +67,21 @@ public class MainController {
         documentList.setItems(documents);
         searchResultsList.setItems(searchResults);
 
+        ContextMenu categoryCtxMenu = new ContextMenu();
+        MenuItem renameItem = new MenuItem("Zmień nazwę...");
+        renameItem.setOnAction(e -> onRenameSelectedCategory());
+        categoryCtxMenu.getItems().add(renameItem);
+        categoryList.setContextMenu(categoryCtxMenu);
+
         categoryList.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> onCategorySelected(newVal));
+
+        categoryList.setOnMouseClicked(e -> {
+            Category selected = categoryList.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                onCategorySelected(selected);
+            }
+        });
 
         documentList.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> onDocumentSelected(newVal));
@@ -151,7 +164,8 @@ public class MainController {
             if (matchedCategory.isPresent()) {
                 category = matchedCategory.get();
             } else {
-                String categoryName = "Kategoria " + (existingCategories.size() + 1);
+                String defaultName = "Kolekcja " + (existingCategories.size() + 1);
+                String categoryName = promptForCategoryName(defaultName);
                 category = new Category(categoryName, schema);
                 documentService.addCategory(category);
             }
@@ -199,7 +213,7 @@ public class MainController {
     private void onExportSchema() {
         Category selected = categoryList.getSelectionModel().getSelectedItem();
         if (selected == null || selected.getSchema() == null) {
-            showAlert("Info", "Wybierz kategorię, aby pobrać jej schemat.");
+            showAlert("Info", "Wybierz kolekcję, aby pobrać jej schemat.");
             return;
         }
 
@@ -421,7 +435,59 @@ public class MainController {
         }
         List<JsonDocument> filtered = documentService.getDocumentsByCategory(category.getId());
         documents.setAll(filtered);
-        statusBar.setText("Kategoria: " + category.getName() + " (" + filtered.size() + " dokumentów)");
+        documentList.getSelectionModel().clearSelection();
+        showSchemaInPreview(category);
+        statusBar.setText("Kolekcja: " + category.getName() + " (" + filtered.size() + " dokumentów)");
+    }
+
+    private String promptForCategoryName(String defaultName) {
+        TextInputDialog dialog = new TextInputDialog(defaultName);
+        dialog.setTitle("Nowa kolekcja");
+        dialog.setHeaderText("Wykryto nowy typ dokumentu.");
+        dialog.setContentText("Nadaj nazwę kolekcji:");
+        return dialog.showAndWait()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .orElse(defaultName);
+    }
+
+    private void onRenameSelectedCategory() {
+        Category selected = categoryList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("Info", "Wybierz kolekcję do zmiany nazwy.");
+            return;
+        }
+        TextInputDialog dialog = new TextInputDialog(selected.getName());
+        dialog.setTitle("Zmień nazwę kolekcji");
+        dialog.setHeaderText(null);
+        dialog.setContentText("Nowa nazwa:");
+        dialog.showAndWait()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty() && !s.equals(selected.getName()))
+                .ifPresent(newName -> {
+                    int id = selected.getId();
+                    documentService.renameCategory(id, newName);
+                    refreshData();
+                    categories.stream()
+                            .filter(c -> c.getId() == id)
+                            .findFirst()
+                            .ifPresent(c -> categoryList.getSelectionModel().select(c));
+                    statusBar.setText("Zmieniono nazwę na: " + newName);
+                });
+    }
+
+    private void showSchemaInPreview(Category category) {
+        JsonSchema schema = category.getSchema();
+        if (schema == null || schema.getSchemaContent() == null) {
+            documentPreview.setText("");
+            return;
+        }
+        String raw = schema.getSchemaContent();
+        try {
+            documentPreview.setText(gson.toJson(JsonParser.parseString(raw)));
+        } catch (Exception e) {
+            documentPreview.setText(raw);
+        }
     }
 
     private void onDocumentSelected(JsonDocument document) {
@@ -451,7 +517,7 @@ public class MainController {
     private void updateStatus() {
         int docCount = documentService.getAllDocuments().size();
         int catCount = categories.size();
-        statusBar.setText(docCount + " dokumentów, " + catCount + " kategorii");
+        statusBar.setText(docCount + " dokumentów, " + catCount + " kolekcji");
     }
 
     private void showAlert(String title, String message) {
