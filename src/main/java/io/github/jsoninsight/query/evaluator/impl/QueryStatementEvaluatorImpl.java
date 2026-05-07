@@ -1,13 +1,13 @@
 package io.github.jsoninsight.query.evaluator.impl;
 
 import io.github.jsoninsight.json.JsonNode;
-import io.github.jsoninsight.query.ast.predicate.QueryPredicateExpression;
-import io.github.jsoninsight.query.ast.predicate.node.JsonPathNode;
+import io.github.jsoninsight.query.ast.expression.QueryExpression;
+import io.github.jsoninsight.query.ast.expression.node.JsonPathNode;
 import io.github.jsoninsight.query.ast.statement.QueryStatement;
 import io.github.jsoninsight.query.ast.statement.clause.FromClause;
 import io.github.jsoninsight.query.ast.statement.clause.SelectClause;
 import io.github.jsoninsight.query.ast.statement.clause.WhereClause;
-import io.github.jsoninsight.query.evaluator.QueryPredicateEvaluator;
+import io.github.jsoninsight.query.evaluator.QueryExpressionEvaluator;
 import io.github.jsoninsight.query.evaluator.QueryStatementEvaluator;
 import io.github.jsoninsight.query.evaluator.QueryStatementEvaluatorException;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class QueryStatementEvaluatorImpl implements QueryStatementEvaluator {
 
-    private final QueryPredicateEvaluator predicateEvaluator;
+    private final QueryExpressionEvaluator expressionEvaluator;
 
     private static String toFieldKey(String pathValue) {
         String withoutLeadingDot = pathValue.substring(1);
@@ -74,9 +74,9 @@ public class QueryStatementEvaluatorImpl implements QueryStatementEvaluator {
             return documents;
         }
 
-        QueryPredicateExpression predicate = where.get().predicate();
+        QueryExpression expression = where.get().expression();
         return documents.stream()
-            .filter(doc -> predicateEvaluator.evaluate(doc, predicate))
+            .filter(doc -> expressionEvaluator.evaluate(doc, expression).asBoolean())
             .toList();
     }
 

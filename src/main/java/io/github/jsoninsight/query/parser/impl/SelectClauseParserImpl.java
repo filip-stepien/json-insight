@@ -1,6 +1,6 @@
 package io.github.jsoninsight.query.parser.impl;
 
-import io.github.jsoninsight.query.ast.predicate.node.JsonPathNode;
+import io.github.jsoninsight.query.ast.expression.node.JsonPathNode;
 import io.github.jsoninsight.query.ast.statement.clause.SelectClause;
 import io.github.jsoninsight.query.lexer.QueryToken;
 import io.github.jsoninsight.query.lexer.QueryTokenType;
