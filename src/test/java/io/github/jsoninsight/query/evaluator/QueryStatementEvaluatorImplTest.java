@@ -4,7 +4,7 @@ import io.github.jsoninsight.json.JsonLexer;
 import io.github.jsoninsight.json.JsonNode;
 import io.github.jsoninsight.json.JsonParser;
 import io.github.jsoninsight.query.ast.statement.QueryStatement;
-import io.github.jsoninsight.query.evaluator.impl.QueryPredicateEvaluatorImpl;
+import io.github.jsoninsight.query.evaluator.impl.QueryExpressionEvaluatorImpl;
 import io.github.jsoninsight.query.evaluator.impl.QueryStatementEvaluatorImpl;
 import io.github.jsoninsight.query.lexer.impl.QueryLexerImpl;
 import io.github.jsoninsight.query.parser.QueryParserFactory;
@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class QueryStatementEvaluatorImplTest {
 
-    private static final QueryStatementEvaluator evaluator = new QueryStatementEvaluatorImpl(new QueryPredicateEvaluatorImpl());
+    private static final QueryStatementEvaluator evaluator = QueryEvaluatorFactory.createStatementEvaluator();
     private static final QueryStatementParser parser = QueryParserFactory.createStatementParser();
     private static final QueryLexerImpl lexer = new QueryLexerImpl();
 
@@ -144,13 +144,14 @@ class QueryStatementEvaluatorImplTest {
     // edge cases
 
     @Test
-    void nonObjectDocumentIsFilteredOutByWhereClause() {
+    void nonObjectDocumentInWhereClauseThrowsInStrictMode() {
         var collections = collections("data",
             doc("[1, 2, 3]"),
             doc("{\"age\": 25}")
         );
-        List<JsonNode> result = eval("SELECT * FROM data WHERE .age >= 18", collections);
-        assertEquals(1, result.size());
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
+            eval("SELECT * FROM data WHERE .age >= 18", collections)
+        );
     }
 
     @Test
@@ -171,5 +172,22 @@ class QueryStatementEvaluatorImplTest {
     void unknownCollectionThrows() {
         var collections = collections("users", doc("{\"name\": \"Alice\"}"));
         assertThrows(QueryStatementEvaluatorException.class, () -> eval("SELECT * FROM orders", collections));
+    }
+
+    @Test
+    void fullQueryFiltersWithMatchesAndSize() {
+        var collections = collections("users",
+            doc("{\"code\": \"123\", \"tags\": [\"admin\", \"active\"]}"),
+            doc("{\"code\": \"A123\", \"tags\": [\"admin\", \"active\"]}"),
+            doc("{\"code\": \"456\", \"tags\": [\"admin\"]}")
+        );
+        List<JsonNode> result = eval(
+            "SELECT .code FROM users WHERE matches(.code, \"[0-9]+\") AND size(.tags) > 1",
+            collections
+        );
+
+        assertEquals(1, result.size());
+        JsonNode.ObjectNode obj = assertInstanceOf(JsonNode.ObjectNode.class, result.getFirst());
+        assertEquals(new JsonNode.StringNode("123"), obj.fields().get("code"));
     }
 }

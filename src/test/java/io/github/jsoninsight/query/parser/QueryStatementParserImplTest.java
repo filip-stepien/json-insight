@@ -1,6 +1,6 @@
 package io.github.jsoninsight.query.parser;
 
-import io.github.jsoninsight.query.ast.predicate.node.JsonPathNode;
+import io.github.jsoninsight.query.ast.expression.node.JsonPathNode;
 import io.github.jsoninsight.query.ast.statement.QueryStatement;
 import io.github.jsoninsight.query.ast.statement.clause.FromClause;
 import io.github.jsoninsight.query.ast.statement.clause.SelectClause;
@@ -74,10 +74,10 @@ class QueryStatementParserImplTest {
     }
 
     @Test
-    void parsesWhereClausePredicate() {
+    void parsesWhereClauseExpression() {
         QueryStatement statement = parse("SELECT * FROM users WHERE .age >= 18");
         WhereClause where = statement.where().get();
-        assertNotNull(where.predicate());
+        assertNotNull(where.expression());
     }
 
     // combined
@@ -128,7 +128,7 @@ class QueryStatementParserImplTest {
     }
 
     @Test
-    void throwsWhenWhereHasNoPredicate() {
+    void throwsWhenWhereHasNoExpression() {
         assertThrows(QueryParserException.class, () -> parse("SELECT * FROM users WHERE"));
     }
 }

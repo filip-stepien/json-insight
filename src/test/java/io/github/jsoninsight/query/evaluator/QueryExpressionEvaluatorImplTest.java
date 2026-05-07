@@ -3,23 +3,23 @@ package io.github.jsoninsight.query.evaluator;
 import io.github.jsoninsight.json.JsonNode;
 import io.github.jsoninsight.json.JsonParser;
 import io.github.jsoninsight.json.JsonLexer;
-import io.github.jsoninsight.query.ast.predicate.QueryPredicateExpression;
-import io.github.jsoninsight.query.evaluator.impl.QueryPredicateEvaluatorImpl;
+import io.github.jsoninsight.query.ast.expression.QueryExpression;
+import io.github.jsoninsight.query.evaluator.impl.QueryExpressionEvaluatorImpl;
 import io.github.jsoninsight.query.lexer.impl.QueryLexerImpl;
-import io.github.jsoninsight.query.parser.impl.QueryPredicateParserImpl;
+import io.github.jsoninsight.query.parser.impl.QueryExpressionParserImpl;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class QueryPredicateEvaluatorImplTest {
+class QueryExpressionEvaluatorImplTest {
 
     private static final QueryLexerImpl queryLexer = new QueryLexerImpl();
-    private static final QueryPredicateParserImpl queryParser = new QueryPredicateParserImpl();
-    private static final QueryPredicateEvaluator evaluator = new QueryPredicateEvaluatorImpl();
+    private static final QueryExpressionParserImpl queryParser = new QueryExpressionParserImpl();
+    private static final QueryExpressionEvaluator evaluator = new QueryExpressionEvaluatorImpl();
 
     private boolean eval(String query, String rawJson) {
-        QueryPredicateExpression predicate = queryParser.parse(queryLexer.tokenize(query));
-        return evaluator.evaluate(json(rawJson), predicate);
+        QueryExpression expression = queryParser.parse(queryLexer.tokenize(query));
+        return evaluator.evaluate(json(rawJson), expression).asBoolean();
     }
 
     private JsonNode json(String raw) {
@@ -84,14 +84,16 @@ class QueryPredicateEvaluatorImplTest {
 
     @Test
     void stringComparisonWithUnsupportedOperatorThrows() {
-        assertThrows(QueryPredicateEvaluatorException.class, () ->
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
             eval(".name > \"Adam\"", "{\"name\": \"Jan\"}")
         );
     }
 
     @Test
-    void stringComparisonReturnsFalseWhenFieldMissing() {
-        assertFalse(eval(".name == \"Warsaw\"", "{\"age\": 30}"));
+    void stringComparisonThrowsWhenFieldMissing() {
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
+            eval(".name == \"Warsaw\"", "{\"age\": 30}")
+        );
     }
 
     @Test
@@ -137,8 +139,10 @@ class QueryPredicateEvaluatorImplTest {
     }
 
     @Test
-    void numberComparisonReturnsFalseWhenFieldMissing() {
-        assertFalse(eval(".age > 18", "{\"name\": \"Jan\"}"));
+    void numberComparisonThrowsWhenFieldMissing() {
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
+            eval(".age > 18", "{\"name\": \"Jan\"}")
+        );
     }
 
     // comparison - boolean
@@ -160,7 +164,7 @@ class QueryPredicateEvaluatorImplTest {
 
     @Test
     void booleanComparisonWithUnsupportedOperatorThrows() {
-        assertThrows(QueryPredicateEvaluatorException.class, () ->
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
             eval(".active > true", "{\"active\": true}")
         );
     }
@@ -184,12 +188,12 @@ class QueryPredicateEvaluatorImplTest {
 
     @Test
     void nullComparisonWithUnsupportedOperatorThrows() {
-        assertThrows(QueryPredicateEvaluatorException.class, () ->
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
             eval(".deleted > null", "{\"deleted\": null}")
         );
     }
 
-    // logical - AND
+    // logical
 
     @Test
     void andReturnsTrueWhenBothMatch() {
@@ -201,8 +205,6 @@ class QueryPredicateEvaluatorImplTest {
         assertFalse(eval(".age > 18 AND .active == true", "{\"age\": 30, \"active\": false}"));
     }
 
-    // logical - OR
-
     @Test
     void orReturnsTrueWhenOneMatches() {
         assertTrue(eval(".role == \"admin\" OR .role == \"moderator\"", "{\"role\": \"moderator\"}"));
@@ -213,8 +215,6 @@ class QueryPredicateEvaluatorImplTest {
         assertFalse(eval(".role == \"admin\" OR .role == \"moderator\"", "{\"role\": \"user\"}"));
     }
 
-    // combined
-
     @Test
     void complexQueryMatches() {
         assertTrue(eval(".age >= 18 AND .active == true AND NOT .deleted EXISTS", "{\"age\": 25, \"active\": true}"));
@@ -223,5 +223,92 @@ class QueryPredicateEvaluatorImplTest {
     @Test
     void complexQueryDoesNotMatchWhenDeletedPresent() {
         assertFalse(eval(".age >= 18 AND .active == true AND NOT .deleted EXISTS", "{\"age\": 25, \"active\": true, \"deleted\": null}"));
+    }
+
+    // matches
+
+    @Test
+    void matchesReturnsTrueForFullRegexMatch() {
+        assertTrue(eval("matches(.code, \"[0-9]+\")", "{\"code\": \"12345\"}"));
+    }
+
+    @Test
+    void matchesReturnsFalseWhenOnlyFragmentMatches() {
+        assertFalse(eval("matches(.code, \"[0-9]+\")", "{\"code\": \"A123\"}"));
+    }
+
+    @Test
+    void matchesThrowsForInvalidRegex() {
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
+            eval("matches(.code, \"[\")", "{\"code\": \"123\"}")
+        );
+    }
+
+    @Test
+    void matchesThrowsForWrongValueType() {
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
+            eval("matches(.code, \"[0-9]+\")", "{\"code\": 123}")
+        );
+    }
+
+    @Test
+    void matchesThrowsForMissingPath() {
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
+            eval("matches(.code, \"[0-9]+\")", "{\"name\": \"Jan\"}")
+        );
+    }
+
+    // size
+
+    @Test
+    void sizeWorksForArray() {
+        assertTrue(eval("size(.tags) == 2", "{\"tags\": [\"user\", \"admin\"]}"));
+    }
+
+    @Test
+    void sizeWorksForString() {
+        assertTrue(eval("size(.name) > 3", "{\"name\": \"John\"}"));
+    }
+
+    @Test
+    void sizeWorksForObject() {
+        assertTrue(eval("size(.profile) >= 2", "{\"profile\": {\"name\": \"Jan\", \"age\": 30}}"));
+    }
+
+    @Test
+    void sizeSupportsAllNumberComparisonOperators() {
+        assertTrue(eval("size(.tags) != 1", "{\"tags\": [1, 2]}"));
+        assertTrue(eval("size(.tags) > 1", "{\"tags\": [1, 2]}"));
+        assertTrue(eval("size(.tags) >= 2", "{\"tags\": [1, 2]}"));
+        assertTrue(eval("size(.tags) < 3", "{\"tags\": [1, 2]}"));
+        assertTrue(eval("size(.tags) <= 2", "{\"tags\": [1, 2]}"));
+    }
+
+    @Test
+    void sizeThrowsForUnsupportedType() {
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
+            eval("size(.age) > 0", "{\"age\": 30}")
+        );
+    }
+
+    @Test
+    void sizeThrowsForMissingPath() {
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
+            eval("size(.tags) > 0", "{\"name\": \"Jan\"}")
+        );
+    }
+
+    @Test
+    void whereRequiresBooleanFinalValue() {
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
+            eval("size(.tags)", "{\"tags\": [1, 2]}")
+        );
+    }
+
+    @Test
+    void isExpressionRemainsUnsupported() {
+        assertThrows(QueryExpressionEvaluatorException.class, () ->
+            eval(".age IS NUMBER", "{\"age\": 30}")
+        );
     }
 }

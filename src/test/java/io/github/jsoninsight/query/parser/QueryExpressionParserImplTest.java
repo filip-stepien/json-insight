@@ -1,12 +1,12 @@
 package io.github.jsoninsight.query.parser;
 
-import io.github.jsoninsight.query.ast.predicate.QueryPredicateExpression;
-import io.github.jsoninsight.query.ast.predicate.node.*;
-import io.github.jsoninsight.query.ast.predicate.operator.JsonType;
-import io.github.jsoninsight.query.ast.predicate.operator.ComparisonOperator;
-import io.github.jsoninsight.query.ast.predicate.operator.LogicalOperator;
+import io.github.jsoninsight.query.ast.expression.QueryExpression;
+import io.github.jsoninsight.query.ast.expression.node.*;
+import io.github.jsoninsight.query.ast.expression.operator.JsonType;
+import io.github.jsoninsight.query.ast.expression.operator.ComparisonOperator;
+import io.github.jsoninsight.query.ast.expression.operator.LogicalOperator;
 import io.github.jsoninsight.query.lexer.impl.QueryLexerImpl;
-import io.github.jsoninsight.query.parser.impl.QueryPredicateParserImpl;
+import io.github.jsoninsight.query.parser.impl.QueryExpressionParserImpl;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -14,12 +14,12 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class QueryPredicateParserImplTest {
+class QueryExpressionParserImplTest {
 
     private static final QueryLexerImpl lexer = new QueryLexerImpl();
-    private static final QueryPredicateParserImpl parser = new QueryPredicateParserImpl();
+    private static final QueryExpressionParserImpl parser = new QueryExpressionParserImpl();
 
-    private QueryPredicateExpression parse(String input) {
+    private QueryExpression parse(String input) {
         return parser.parse(lexer.tokenize(input));
     }
 
@@ -28,9 +28,10 @@ class QueryPredicateParserImplTest {
     @Test
     void parsesEqualityComparison() {
         ComparisonNode node = assertInstanceOf(ComparisonNode.class, parse(".age == 25"));
-        assertEquals(".age", node.path().pathValue());
+        JsonPathNode left = assertInstanceOf(JsonPathNode.class, node.leftExpression());
+        NumberLiteralNode right = assertInstanceOf(NumberLiteralNode.class, node.rightExpression());
+        assertEquals(".age", left.pathValue());
         assertEquals(ComparisonOperator.EQ, node.operator());
-        NumberLiteralNode right = (NumberLiteralNode) node.rightValue();
         assertEquals(new BigDecimal("25"), right.value());
     }
 
@@ -38,7 +39,7 @@ class QueryPredicateParserImplTest {
     void parsesNotEqualComparison() {
         ComparisonNode node = assertInstanceOf(ComparisonNode.class, parse(".status != \"inactive\""));
         assertEquals(ComparisonOperator.NEQ, node.operator());
-        StringLiteralNode right = (StringLiteralNode) node.rightValue();
+        StringLiteralNode right = assertInstanceOf(StringLiteralNode.class, node.rightExpression());
         assertEquals("inactive", right.value());
     }
 
@@ -70,37 +71,37 @@ class QueryPredicateParserImplTest {
 
     @Test
     void parsesStringLiteral() {
-        ComparisonNode node = assertInstanceOf(ComparisonNode.class, parse(".functionName == \"John\""));
-        StringLiteralNode right = (StringLiteralNode) node.rightValue();
+        ComparisonNode node = assertInstanceOf(ComparisonNode.class, parse(".name == \"John\""));
+        StringLiteralNode right = assertInstanceOf(StringLiteralNode.class, node.rightExpression());
         assertEquals("John", right.value());
     }
 
     @Test
     void parsesNegativeNumber() {
         ComparisonNode node = assertInstanceOf(ComparisonNode.class, parse(".temperature == -5"));
-        NumberLiteralNode right = (NumberLiteralNode) node.rightValue();
+        NumberLiteralNode right = assertInstanceOf(NumberLiteralNode.class, node.rightExpression());
         assertEquals(new BigDecimal("-5"), right.value());
     }
 
     @Test
     void parsesBooleanLiteral() {
         ComparisonNode node = assertInstanceOf(ComparisonNode.class, parse(".active == true"));
-        BooleanLiteralNode right = (BooleanLiteralNode) node.rightValue();
+        BooleanLiteralNode right = assertInstanceOf(BooleanLiteralNode.class, node.rightExpression());
         assertTrue(right.value());
     }
 
     @Test
     void parsesNullLiteral() {
-        ComparisonNode node = assertInstanceOf(ComparisonNode.class, parse(".rightValue == null"));
-        assertInstanceOf(NullLiteralNode.class, node.rightValue());
+        ComparisonNode node = assertInstanceOf(ComparisonNode.class, parse(".deleted == null"));
+        assertInstanceOf(NullLiteralNode.class, node.rightExpression());
     }
 
     // exists / is
 
     @Test
     void parsesExistsExpression() {
-        ExistsNode node = assertInstanceOf(ExistsNode.class, parse(".functionName EXISTS"));
-        assertEquals(".functionName", node.path().pathValue());
+        ExistsNode node = assertInstanceOf(ExistsNode.class, parse(".name EXISTS"));
+        assertEquals(".name", node.path().pathValue());
     }
 
     @Test
@@ -159,19 +160,45 @@ class QueryPredicateParserImplTest {
     // functions
 
     @Test
-    void parsesFunctionCallWithPathAndStringArg() {
-        FunctionCallNode node = assertInstanceOf(FunctionCallNode.class, parse("contains(.tags, \"admin\")"));
-        assertEquals("contains", node.functionName());
-        assertEquals(2, node.args().size());
-        assertInstanceOf(JsonPathNode.class, node.args().getFirst());
-        assertInstanceOf(StringLiteralNode.class, node.args().getLast());
+    void parsesMatchesFunction() {
+        MatchesNode node = assertInstanceOf(MatchesNode.class, parse("matches(.code, \"[0-9]+\")"));
+        JsonPathNode value = assertInstanceOf(JsonPathNode.class, node.value());
+        StringLiteralNode pattern = assertInstanceOf(StringLiteralNode.class, node.pattern());
+        assertEquals(".code", value.pathValue());
+        assertEquals("[0-9]+", pattern.value());
     }
 
     @Test
-    void parsesFunctionCallWithNoArgs() {
-        FunctionCallNode node = assertInstanceOf(FunctionCallNode.class, parse("isEmpty()"));
-        assertEquals("isEmpty", node.functionName());
-        assertEquals(0, node.args().size());
+    void parsesSizeFunctionAsStandaloneExpression() {
+        SizeNode node = assertInstanceOf(SizeNode.class, parse("size(.tags)"));
+        JsonPathNode value = assertInstanceOf(JsonPathNode.class, node.value());
+        assertEquals(".tags", value.pathValue());
+    }
+
+    @Test
+    void parsesSizeFunctionInComparison() {
+        ComparisonNode node = assertInstanceOf(ComparisonNode.class, parse("size(.tags) > 1"));
+        SizeNode left = assertInstanceOf(SizeNode.class, node.leftExpression());
+        NumberLiteralNode right = assertInstanceOf(NumberLiteralNode.class, node.rightExpression());
+        assertInstanceOf(JsonPathNode.class, left.value());
+        assertEquals(ComparisonOperator.GT, node.operator());
+        assertEquals(new BigDecimal("1"), right.value());
+    }
+
+    @Test
+    void parsesCombinedMatchesAndSizeExpression() {
+        LogicalNode node = assertInstanceOf(
+            LogicalNode.class,
+            parse("matches(.code, \"[0-9]+\") AND size(.tags) > 1")
+        );
+        assertInstanceOf(MatchesNode.class, node.leftExpression());
+        assertInstanceOf(ComparisonNode.class, node.rightExpression());
+    }
+
+    @Test
+    void functionNamesAreCaseInsensitive() {
+        assertInstanceOf(MatchesNode.class, parse("MATCHES(.code, \"[0-9]+\")"));
+        assertInstanceOf(SizeNode.class, parse("SIZE(.tags)"));
     }
 
     // nested pathValue
@@ -179,7 +206,8 @@ class QueryPredicateParserImplTest {
     @Test
     void parsesNestedPath() {
         ComparisonNode node = assertInstanceOf(ComparisonNode.class, parse(".address.city == \"Warsaw\""));
-        assertEquals(".address.city", node.path().pathValue());
+        JsonPathNode left = assertInstanceOf(JsonPathNode.class, node.leftExpression());
+        assertEquals(".address.city", left.pathValue());
     }
 
     // exceptions
@@ -195,17 +223,17 @@ class QueryPredicateParserImplTest {
     }
 
     @Test
-    void throwsForMissingOperatorAfterPath() {
-        assertThrows(QueryPredicateParserException.class, () -> parse(".age"));
+    void throwsForUnknownFunction() {
+        assertThrows(QueryExpressionParserException.class, () -> parse("contains(.tags, \"admin\")"));
     }
 
     @Test
     void throwsForMissingClosingParen() {
-        assertThrows(QueryPredicateParserException.class, () -> parse("(.age == 25"));
+        assertThrows(QueryExpressionParserException.class, () -> parse("(.age == 25"));
     }
 
     @Test
     void throwsForUnexpectedToken() {
-        assertThrows(QueryPredicateParserException.class, () -> parse("== 25"));
+        assertThrows(QueryExpressionParserException.class, () -> parse("== 25"));
     }
 }
