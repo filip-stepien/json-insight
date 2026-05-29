@@ -7,7 +7,7 @@ public class JsonDocument {
     private int id;
     private String name;
     private String content;
-    private int categoryId;
+    private int collectionId;
     private LocalDateTime addedAt;
 
     public JsonDocument() {
@@ -43,12 +43,12 @@ public class JsonDocument {
         this.content = content;
     }
 
-    public int getCategoryId() {
-        return categoryId;
+    public int getCollectionId() {
+        return collectionId;
     }
 
-    public void setCategoryId(int categoryId) {
-        this.categoryId = categoryId;
+    public void setCollectionId(int collectionId) {
+        this.collectionId = collectionId;
     }
 
     public LocalDateTime getAddedAt() {

@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.github.jsoninsight.model.Category;
+import io.github.jsoninsight.model.Collection;
 import io.github.jsoninsight.model.JsonDocument;
 import io.github.jsoninsight.model.JsonSchema;
 import io.github.jsoninsight.model.QueryResult;
@@ -13,9 +13,8 @@ import io.github.jsoninsight.service.DocumentService;
 import io.github.jsoninsight.service.QueryService;
 import io.github.jsoninsight.service.SchemaService;
 import io.github.jsoninsight.service.impl.DocumentServiceImpl;
-import io.github.jsoninsight.service.impl.StubQueryService;
+import io.github.jsoninsight.service.impl.EvaluatingQueryService;
 import io.github.jsoninsight.service.impl.StubSchemaService;
-import io.github.jsoninsight.ui.integration.ParsingQueryService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -36,7 +35,7 @@ import java.util.*;
 
 public class MainController {
 
-    @FXML private ListView<Category> categoryList;
+    @FXML private ListView<Collection> collectionList;
     @FXML private ListView<JsonDocument> documentList;
     @FXML private TextArea documentPreview;
     @FXML private ListView<JsonDocument> searchResultsList;
@@ -49,11 +48,11 @@ public class MainController {
 
     private final DocumentService documentService = new DocumentServiceImpl();
     private final SchemaService schemaService = new StubSchemaService();
-    private final QueryService queryService = new ParsingQueryService(new StubQueryService());
+    private final QueryService queryService = new EvaluatingQueryService();
 
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-    private final ObservableList<Category> categories = FXCollections.observableArrayList();
+    private final ObservableList<Collection> collections = FXCollections.observableArrayList();
     private final ObservableList<JsonDocument> documents = FXCollections.observableArrayList();
     private final ObservableList<JsonDocument> searchResults = FXCollections.observableArrayList();
 
@@ -63,23 +62,35 @@ public class MainController {
 
     @FXML
     public void initialize() {
-        categoryList.setItems(categories);
+        collectionList.setItems(collections);
+        collectionList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(Collection collection, boolean empty) {
+                super.updateItem(collection, empty);
+                if (empty || collection == null) {
+                    setText(null);
+                } else {
+                    int count = documentService.getDocumentsByCollection(collection.getId()).size();
+                    setText(collection.getName() + "  (" + count + ")");
+                }
+            }
+        });
         documentList.setItems(documents);
         searchResultsList.setItems(searchResults);
 
-        ContextMenu categoryCtxMenu = new ContextMenu();
+        ContextMenu collectionCtxMenu = new ContextMenu();
         MenuItem renameItem = new MenuItem("Zmień nazwę...");
-        renameItem.setOnAction(e -> onRenameSelectedCategory());
-        categoryCtxMenu.getItems().add(renameItem);
-        categoryList.setContextMenu(categoryCtxMenu);
+        renameItem.setOnAction(e -> onRenameSelectedCollection());
+        collectionCtxMenu.getItems().add(renameItem);
+        collectionList.setContextMenu(collectionCtxMenu);
 
-        categoryList.getSelectionModel().selectedItemProperty().addListener(
-                (obs, oldVal, newVal) -> onCategorySelected(newVal));
+        collectionList.getSelectionModel().selectedItemProperty().addListener(
+                (obs, oldVal, newVal) -> onCollectionSelected(newVal));
 
-        categoryList.setOnMouseClicked(e -> {
-            Category selected = categoryList.getSelectionModel().getSelectedItem();
+        collectionList.setOnMouseClicked(e -> {
+            Collection selected = collectionList.getSelectionModel().getSelectedItem();
             if (selected != null) {
-                onCategorySelected(selected);
+                onCollectionSelected(selected);
             }
         });
 
@@ -90,13 +101,15 @@ public class MainController {
                 (obs, oldVal, newVal) -> onDocumentSelected(newVal));
 
         queryInput.setTooltip(new Tooltip(
-                "Przykłady (ścieżki JSON zaczynają się od kropki):\n" +
+                "Możesz wpisać sam predykat (zostanie owinięty SELECT * FROM ... WHERE)\n" +
+                "lub pełne zapytanie SELECT/FROM/WHERE.\n\n" +
+                "Przykłady (predykat):\n" +
                 "  .age >= 18 AND .active == true\n" +
                 "  .email EXISTS AND .email IS STRING\n" +
-                "  contains(.tags, \"admin\") AND size(.tags) > 1\n" +
-                "  (.score >= 80 AND .level IS NUMBER) OR .role == \"admin\""));
+                "  size(.tags) > 1 AND matches(.email, \".+@.+\")\n\n" +
+                "Pełne zapytanie:\n" +
+                "  SELECT .name, .age FROM uzytkownicy WHERE .age > 21"));
 
-        // Drag & Drop + Ctrl+F po dostępności sceny.
         Platform.runLater(this::installSceneHandlers);
 
         updatePaginationUi();
@@ -104,7 +117,7 @@ public class MainController {
     }
 
     private void installSceneHandlers() {
-        Scene scene = categoryList.getScene();
+        Scene scene = collectionList.getScene();
         if (scene == null) return;
 
         scene.setOnDragOver(e -> {
@@ -128,7 +141,6 @@ public class MainController {
             e.consume();
         });
 
-        // Ctrl+F → wyszukiwanie w podglądzie dokumentu.
         KeyCombination findKey = new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN);
         scene.getAccelerators().put(findKey, this::onFindInPreview);
     }
@@ -140,7 +152,7 @@ public class MainController {
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("Pliki JSON", "*.json"));
 
-        File file = fileChooser.showOpenDialog(categoryList.getScene().getWindow());
+        File file = fileChooser.showOpenDialog(collectionList.getScene().getWindow());
         if (file == null) return;
         ingestFile(file);
     }
@@ -157,20 +169,20 @@ public class MainController {
             }
 
             JsonSchema schema = schemaService.generateSchema(document.getContent());
-            List<Category> existingCategories = documentService.getAllCategories();
-            Optional<Category> matchedCategory = schemaService.categorize(document, existingCategories);
+            List<Collection> existingCollections = documentService.getAllCollections();
+            Optional<Collection> matched = schemaService.findMatchingCollection(document, existingCollections);
 
-            Category category;
-            if (matchedCategory.isPresent()) {
-                category = matchedCategory.get();
+            Collection collection;
+            if (matched.isPresent()) {
+                collection = matched.get();
             } else {
-                String defaultName = "Kolekcja " + (existingCategories.size() + 1);
-                String categoryName = promptForCategoryName(defaultName);
-                category = new Category(categoryName, schema);
-                documentService.addCategory(category);
+                String defaultName = "Kolekcja " + (existingCollections.size() + 1);
+                String collectionName = promptForCollectionName(defaultName);
+                collection = new Collection(collectionName, schema);
+                documentService.addCollection(collection);
             }
 
-            document.setCategoryId(category.getId());
+            document.setCollectionId(collection.getId());
             documentService.addDocument(document);
 
             refreshData();
@@ -198,7 +210,7 @@ public class MainController {
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("Pliki JSON", "*.json"));
 
-        File file = fileChooser.showSaveDialog(categoryList.getScene().getWindow());
+        File file = fileChooser.showSaveDialog(collectionList.getScene().getWindow());
         if (file == null) return;
 
         try {
@@ -211,7 +223,7 @@ public class MainController {
 
     @FXML
     private void onExportSchema() {
-        Category selected = categoryList.getSelectionModel().getSelectedItem();
+        Collection selected = collectionList.getSelectionModel().getSelectedItem();
         if (selected == null || selected.getSchema() == null) {
             showAlert("Info", "Wybierz kolekcję, aby pobrać jej schemat.");
             return;
@@ -223,7 +235,7 @@ public class MainController {
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("Pliki JSON", "*.json"));
 
-        File file = fileChooser.showSaveDialog(categoryList.getScene().getWindow());
+        File file = fileChooser.showSaveDialog(collectionList.getScene().getWindow());
         if (file == null) return;
 
         try {
@@ -247,22 +259,22 @@ public class MainController {
                 new FileChooser.ExtensionFilter("JSON Lines", "*.jsonl"),
                 new FileChooser.ExtensionFilter("CSV", "*.csv"));
 
-        File file = fileChooser.showSaveDialog(categoryList.getScene().getWindow());
+        File file = fileChooser.showSaveDialog(collectionList.getScene().getWindow());
         if (file == null) return;
 
         boolean csv = file.getName().toLowerCase(Locale.ROOT).endsWith(".csv");
         try (BufferedWriter w = Files.newBufferedWriter(file.toPath())) {
             if (csv) {
-                w.write("name,categoryId,content\n");
+                w.write("name,collectionId,content\n");
                 for (JsonDocument d : allResults) {
-                    w.write(csvCell(d.getName()) + "," + d.getCategoryId() + "," + csvCell(d.getContent()));
+                    w.write(csvCell(d.getName()) + "," + d.getCollectionId() + "," + csvCell(d.getContent()));
                     w.newLine();
                 }
             } else {
                 for (JsonDocument d : allResults) {
                     JsonObject row = new JsonObject();
                     row.addProperty("name", d.getName());
-                    row.addProperty("categoryId", d.getCategoryId());
+                    row.addProperty("collectionId", d.getCollectionId());
                     try {
                         row.add("content", JsonParser.parseString(d.getContent()));
                     } catch (Exception ex) {
@@ -301,14 +313,22 @@ public class MainController {
             return;
         }
 
-        List<JsonDocument> allDocuments = documentService.getAllDocuments();
-        QueryResult result = queryService.executeQuery(query, allDocuments);
+        List<JsonDocument> scope = scopeForSearch();
+        QueryResult result = queryService.executeQuery(query, scope);
 
         allResults.clear();
         allResults.addAll(result.getMatchedDocuments());
         currentPage = 0;
         applyPage();
-        statusBar.setText("Znaleziono: " + result.getTotalMatches() + " dokumentów");
+        statusBar.setText("Znaleziono: " + result.getTotalMatches() + " z " + scope.size() + " dokumentów");
+    }
+
+    private List<JsonDocument> scopeForSearch() {
+        Collection selected = collectionList.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            return documentService.getDocumentsByCollection(selected.getId());
+        }
+        return documentService.getAllDocuments();
     }
 
     @FXML
@@ -353,7 +373,7 @@ public class MainController {
             Stage st = new Stage();
             st.setTitle("Kreator zapytań");
             st.initModality(Modality.WINDOW_MODAL);
-            st.initOwner(categoryList.getScene().getWindow());
+            st.initOwner(collectionList.getScene().getWindow());
             Scene scene = new Scene(root);
             String css = getClass().getResource("/io/github/jsoninsight/ui/style.css").toExternalForm();
             scene.getStylesheets().add(css);
@@ -370,9 +390,9 @@ public class MainController {
     private Set<String> collectFieldSuggestions() {
         Set<String> fields = new TreeSet<>();
         List<JsonDocument> source;
-        Category selectedCat = categoryList.getSelectionModel().getSelectedItem();
-        if (selectedCat != null) {
-            source = documentService.getDocumentsByCategory(selectedCat.getId());
+        Collection selectedCol = collectionList.getSelectionModel().getSelectedItem();
+        if (selectedCol != null) {
+            source = documentService.getDocumentsByCollection(selectedCol.getId());
         } else {
             source = documentService.getAllDocuments();
         }
@@ -398,7 +418,7 @@ public class MainController {
 
     @FXML
     private void onToggleDarkMode() {
-        Scene scene = categoryList.getScene();
+        Scene scene = collectionList.getScene();
         if (scene == null) return;
         if (darkModeToggle.isSelected()) {
             scene.getRoot().getStyleClass().add("dark");
@@ -428,19 +448,19 @@ public class MainController {
         });
     }
 
-    private void onCategorySelected(Category category) {
-        if (category == null) {
+    private void onCollectionSelected(Collection collection) {
+        if (collection == null) {
             documents.setAll(documentService.getAllDocuments());
             return;
         }
-        List<JsonDocument> filtered = documentService.getDocumentsByCategory(category.getId());
+        List<JsonDocument> filtered = documentService.getDocumentsByCollection(collection.getId());
         documents.setAll(filtered);
         documentList.getSelectionModel().clearSelection();
-        showSchemaInPreview(category);
-        statusBar.setText("Kolekcja: " + category.getName() + " (" + filtered.size() + " dokumentów)");
+        showSchemaInPreview(collection);
+        statusBar.setText("Kolekcja: " + collection.getName() + " (" + filtered.size() + " dokumentów)");
     }
 
-    private String promptForCategoryName(String defaultName) {
+    private String promptForCollectionName(String defaultName) {
         TextInputDialog dialog = new TextInputDialog(defaultName);
         dialog.setTitle("Nowa kolekcja");
         dialog.setHeaderText("Wykryto nowy typ dokumentu.");
@@ -451,8 +471,8 @@ public class MainController {
                 .orElse(defaultName);
     }
 
-    private void onRenameSelectedCategory() {
-        Category selected = categoryList.getSelectionModel().getSelectedItem();
+    private void onRenameSelectedCollection() {
+        Collection selected = collectionList.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showAlert("Info", "Wybierz kolekcję do zmiany nazwy.");
             return;
@@ -466,18 +486,18 @@ public class MainController {
                 .filter(s -> !s.isEmpty() && !s.equals(selected.getName()))
                 .ifPresent(newName -> {
                     int id = selected.getId();
-                    documentService.renameCategory(id, newName);
+                    documentService.renameCollection(id, newName);
                     refreshData();
-                    categories.stream()
+                    collections.stream()
                             .filter(c -> c.getId() == id)
                             .findFirst()
-                            .ifPresent(c -> categoryList.getSelectionModel().select(c));
+                            .ifPresent(c -> collectionList.getSelectionModel().select(c));
                     statusBar.setText("Zmieniono nazwę na: " + newName);
                 });
     }
 
-    private void showSchemaInPreview(Category category) {
-        JsonSchema schema = category.getSchema();
+    private void showSchemaInPreview(Collection collection) {
+        JsonSchema schema = collection.getSchema();
         if (schema == null || schema.getSchemaContent() == null) {
             documentPreview.setText("");
             return;
@@ -504,10 +524,10 @@ public class MainController {
     }
 
     private void refreshData() {
-        categories.setAll(documentService.getAllCategories());
-        Category selected = categoryList.getSelectionModel().getSelectedItem();
+        collections.setAll(documentService.getAllCollections());
+        Collection selected = collectionList.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            documents.setAll(documentService.getDocumentsByCategory(selected.getId()));
+            documents.setAll(documentService.getDocumentsByCollection(selected.getId()));
         } else {
             documents.setAll(documentService.getAllDocuments());
         }
@@ -516,8 +536,8 @@ public class MainController {
 
     private void updateStatus() {
         int docCount = documentService.getAllDocuments().size();
-        int catCount = categories.size();
-        statusBar.setText(docCount + " dokumentów, " + catCount + " kolekcji");
+        int colCount = collections.size();
+        statusBar.setText(docCount + " dokumentów, " + colCount + " kolekcji");
     }
 
     private void showAlert(String title, String message) {

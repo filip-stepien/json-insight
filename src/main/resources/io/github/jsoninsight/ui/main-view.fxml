@@ -39,7 +39,7 @@
                 </padding>
 
                 <Label text="Kolekcje" styleClass="section-header"/>
-                <ListView fx:id="categoryList" VBox.vgrow="ALWAYS" styleClass="sidebar-list"/>
+                <ListView fx:id="collectionList" VBox.vgrow="ALWAYS" styleClass="sidebar-list"/>
 
                 <Separator>
                     <padding>

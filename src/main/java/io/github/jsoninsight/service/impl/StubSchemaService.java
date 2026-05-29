@@ -1,7 +1,7 @@
 package io.github.jsoninsight.service.impl;
 
 import io.github.jsoninsight.json.SchemaGenerator;
-import io.github.jsoninsight.model.Category;
+import io.github.jsoninsight.model.Collection;
 import io.github.jsoninsight.model.JsonDocument;
 import io.github.jsoninsight.model.JsonSchema;
 import io.github.jsoninsight.service.SchemaService;
@@ -27,13 +27,13 @@ public class StubSchemaService implements SchemaService {
     }
 
     @Override
-    public Optional<Category> categorize(JsonDocument document, List<Category> existingCategories) {
-        if (document == null || existingCategories == null || existingCategories.isEmpty()) {
+    public Optional<Collection> findMatchingCollection(JsonDocument document, List<Collection> existingCollections) {
+        if (document == null || existingCollections == null || existingCollections.isEmpty()) {
             return Optional.empty();
         }
         JsonSchema docSchema = generateSchema(document.getContent());
-        return existingCategories.stream()
-                .filter(cat -> cat.getSchema() != null && schemasMatch(docSchema, cat.getSchema()))
+        return existingCollections.stream()
+                .filter(c -> c.getSchema() != null && schemasMatch(docSchema, c.getSchema()))
                 .findFirst();
     }
 }

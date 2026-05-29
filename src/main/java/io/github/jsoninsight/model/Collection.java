@@ -3,18 +3,18 @@ package io.github.jsoninsight.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Category {
+public class Collection {
 
     private int id;
     private String name;
     private JsonSchema schema;
     private List<JsonDocument> documents;
 
-    public Category() {
+    public Collection() {
         this.documents = new ArrayList<>();
     }
 
-    public Category(String name, JsonSchema schema) {
+    public Collection(String name, JsonSchema schema) {
         this.name = name;
         this.schema = schema;
         this.documents = new ArrayList<>();

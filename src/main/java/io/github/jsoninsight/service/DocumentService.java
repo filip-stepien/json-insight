@@ -1,6 +1,6 @@
 package io.github.jsoninsight.service;
 
-import io.github.jsoninsight.model.Category;
+import io.github.jsoninsight.model.Collection;
 import io.github.jsoninsight.model.JsonDocument;
 import io.github.jsoninsight.model.JsonSchema;
 
@@ -20,11 +20,11 @@ public interface DocumentService {
 
     List<JsonDocument> getAllDocuments();
 
-    List<JsonDocument> getDocumentsByCategory(int categoryId);
+    List<JsonDocument> getDocumentsByCollection(int collectionId);
 
-    List<Category> getAllCategories();
+    List<Collection> getAllCollections();
 
-    void addCategory(Category category);
+    void addCollection(Collection collection);
 
-    void renameCategory(int categoryId, String newName);
+    void renameCollection(int collectionId, String newName);
 }

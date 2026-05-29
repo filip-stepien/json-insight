@@ -7,38 +7,22 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="io.github.jsoninsight.ui.controller.QueryBuilderController"
       styleClass="root"
-      prefWidth="720" prefHeight="460" spacing="10">
+      prefWidth="860" prefHeight="560" spacing="10">
     <padding>
         <Insets top="14" right="14" bottom="14" left="14"/>
     </padding>
 
     <Label text="Kreator zapytań" styleClass="section-header"/>
 
-    <!-- Row: field / operator / value -->
-    <HBox spacing="8" alignment="CENTER_LEFT">
-        <Label text="Pole:"/>
-        <ComboBox fx:id="fieldCombo" editable="true" prefWidth="180" promptText="np. address.city"/>
-        <Label text="Operator:"/>
-        <ComboBox fx:id="operatorCombo" prefWidth="150"/>
-        <Label text="Wartość:"/>
-        <TextField fx:id="valueInput" HBox.hgrow="ALWAYS" promptText="wartość lub argument"/>
-    </HBox>
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="qb-scroll">
+        <VBox fx:id="treeContainer" spacing="6">
+            <padding><Insets top="4" right="4" bottom="4" left="4"/></padding>
+        </VBox>
+    </ScrollPane>
 
-    <HBox spacing="8" alignment="CENTER_LEFT">
-        <Button text="Dodaj warunek" onAction="#onAddCondition" styleClass="accent-button"/>
-        <Separator orientation="VERTICAL"/>
-        <Button text="AND" onAction="#onAnd"/>
-        <Button text="OR" onAction="#onOr"/>
-        <Button text="NOT" onAction="#onNot"/>
-        <Button text="(" onAction="#onOpenParen"/>
-        <Button text=")" onAction="#onCloseParen"/>
-        <Separator orientation="VERTICAL"/>
-        <Button text="Cofnij" onAction="#onUndo"/>
-        <Button text="Wyczyść" onAction="#onClear"/>
-    </HBox>
-
-    <Label text="Zapytanie" styleClass="section-header"/>
-    <TextArea fx:id="queryArea" prefRowCount="6" wrapText="true" styleClass="json-preview"
+    <Label text="Podgląd zapytania" styleClass="section-header"/>
+    <TextArea fx:id="previewArea" prefRowCount="3" wrapText="true"
+              editable="false" styleClass="json-preview"
               promptText="Tu pojawi się złożone zapytanie..."/>
 
     <HBox spacing="8" alignment="CENTER_RIGHT">

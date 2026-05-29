@@ -1,155 +1,266 @@
 package io.github.jsoninsight.ui.controller;
 
-import io.github.jsoninsight.query.ast.operator.ComparisonOperator;
-import io.github.jsoninsight.query.ast.operator.JsonType;
 import io.github.jsoninsight.service.QueryService;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
 public class QueryBuilderController {
 
-    @FXML private ComboBox<String> fieldCombo;
-    @FXML private ComboBox<String> operatorCombo;
-    @FXML private TextField valueInput;
-    @FXML private TextArea queryArea;
+    @FXML private VBox treeContainer;
+    @FXML private TextArea previewArea;
     @FXML private Label builderStatus;
 
-    private final Deque<String> history = new ArrayDeque<>();
     private QueryService queryService;
     private Consumer<String> onApplyCallback;
+    private final List<String> suggestedFields = new ArrayList<>();
 
-    private static String symbolOf(ComparisonOperator op) {
-        switch (op) {
-            case EQ:  return "==";
-            case NEQ: return "!=";
-            case GT:  return ">";
-            case GTE: return ">=";
-            case LT:  return "<";
-            case LTE: return "<=";
-            default:  return op.name();
-        }
-    }
-
-    private static List<String> buildOperatorList() {
-        List<String> ops = new ArrayList<>();
-        for (ComparisonOperator op : ComparisonOperator.values()) ops.add(symbolOf(op));
-        ops.add("EXISTS");
-        ops.add("NOT EXISTS");
-        for (JsonType t : JsonType.values()) ops.add("IS " + t.name());
-        ops.add("contains(...)");
-        ops.add("size(...)");
-        ops.add("startsWith(...)");
-        ops.add("matches(...)");
-        return ops;
-    }
+    private final QbGroup root = new QbGroup();
 
     @FXML
     public void initialize() {
-        operatorCombo.setItems(FXCollections.observableArrayList(buildOperatorList()));
-        operatorCombo.getSelectionModel().select(0);
+        if (root.children.isEmpty()) {
+            root.children.add(new QbRule());
+        }
+        rebuild();
     }
 
-    public void configure(QueryService queryService,
-                          Collection<String> suggestedFields,
-                          Consumer<String> onApply) {
-        this.queryService = queryService;
+    public void configure(QueryService qs, Collection<String> fields, Consumer<String> onApply) {
+        this.queryService = qs;
         this.onApplyCallback = onApply;
-        if (suggestedFields != null && !suggestedFields.isEmpty()) {
-            fieldCombo.setItems(FXCollections.observableArrayList(suggestedFields));
+        this.suggestedFields.clear();
+        if (fields != null) this.suggestedFields.addAll(fields);
+        rebuild();
+    }
+
+    private void rebuild() {
+        treeContainer.getChildren().setAll(renderGroup(root, true, 0));
+        refreshPreview();
+    }
+
+    private void refreshPreview() {
+        previewArea.setText(serialize(root));
+    }
+
+    private Node renderGroup(QbGroup g, boolean isRoot, int depth) {
+        VBox box = new VBox(6);
+        box.getStyleClass().add(depth == 0 ? "qb-group" : "qb-group-nested");
+
+        HBox header = new HBox(6);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.getStyleClass().add("qb-group-header");
+
+        ToggleButton notTog = new ToggleButton("NOT");
+        notTog.setSelected(g.negated);
+        notTog.setOnAction(e -> { g.negated = notTog.isSelected(); rebuild(); });
+
+        ChoiceBox<Combinator> combo = new ChoiceBox<>(FXCollections.observableArrayList(Combinator.values()));
+        combo.setValue(g.combinator);
+        combo.setOnAction(e -> {
+            Combinator v = combo.getValue();
+            if (v != null && v != g.combinator) {
+                g.combinator = v;
+                rebuild();
+            }
+        });
+
+        Button addRule = new Button("+ Warunek");
+        addRule.setOnAction(e -> { g.children.add(new QbRule()); rebuild(); });
+
+        Button addGroup = new Button("+ Grupa");
+        addGroup.setOnAction(e -> {
+            QbGroup sub = new QbGroup();
+            sub.children.add(new QbRule());
+            g.children.add(sub);
+            rebuild();
+        });
+
+        header.getChildren().addAll(notTog, combo, addRule, addGroup);
+
+        if (!isRoot) {
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            Button rm = new Button("×");
+            rm.getStyleClass().add("qb-remove");
+            rm.setOnAction(e -> {
+                if (removeFromTree(g, root)) rebuild();
+            });
+            header.getChildren().addAll(spacer, rm);
         }
+
+        box.getChildren().add(header);
+
+        VBox childrenBox = new VBox(4);
+        childrenBox.setPadding(new Insets(0, 0, 0, 16));
+        for (QbNode child : g.children) {
+            Node node = switch (child) {
+                case QbRule r -> renderRule(r, g);
+                case QbGroup sub -> renderGroup(sub, false, depth + 1);
+            };
+            childrenBox.getChildren().add(node);
+        }
+        box.getChildren().add(childrenBox);
+
+        return box;
     }
 
-    @FXML
-    private void onAddCondition() {
-        String field = textOf(fieldCombo.getEditor().getText());
-        String op = operatorCombo.getValue();
-        String value = textOf(valueInput.getText());
+    private Node renderRule(QbRule r, QbGroup parent) {
+        HBox row = new HBox(6);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.getStyleClass().add("qb-rule");
 
-        if (field.isBlank() || op == null) {
-            setStatus("Podaj pole i operator.");
-            return;
+        ComboBox<String> field = new ComboBox<>(FXCollections.observableArrayList(suggestedFields));
+        field.setEditable(true);
+        field.setPromptText(".pole");
+        field.setPrefWidth(200);
+        field.getEditor().setText(r.field);
+        field.getEditor().textProperty().addListener((o, ov, nv) -> {
+            r.field = nv == null ? "" : nv;
+            refreshPreview();
+        });
+
+        ChoiceBox<String> op = new ChoiceBox<>(FXCollections.observableArrayList(allOperators()));
+        op.setPrefWidth(140);
+        op.setValue(r.operator);
+        op.setOnAction(e -> {
+            String v = op.getValue();
+            if (v != null && !Objects.equals(v, r.operator)) {
+                r.operator = v;
+                rebuild();
+            }
+        });
+
+        Region valueField;
+        if (operatorTakesValue(r.operator)) {
+            TextField val = new TextField(r.value);
+            val.setPromptText(valuePromptFor(r.operator));
+            val.textProperty().addListener((o, ov, nv) -> {
+                r.value = nv == null ? "" : nv;
+                refreshPreview();
+            });
+            HBox.setHgrow(val, Priority.ALWAYS);
+            valueField = val;
+        } else {
+            Region empty = new Region();
+            HBox.setHgrow(empty, Priority.ALWAYS);
+            valueField = empty;
         }
 
-        // Lexer Filipa wymaga, żeby ścieżka JSON zaczynała się od kropki.
-        if (!field.startsWith(".")) {
-            field = "." + field;
+        Button rm = new Button("×");
+        rm.getStyleClass().add("qb-remove");
+        rm.setOnAction(e -> { parent.children.remove(r); rebuild(); });
+
+        row.getChildren().addAll(field, op, valueField, rm);
+        return row;
+    }
+
+    private static List<String> allOperators() {
+        return List.of(
+                "==", "!=", ">", ">=", "<", "<=",
+                "EXISTS", "NOT EXISTS",
+                "IS STRING", "IS NUMBER", "IS BOOLEAN", "IS NULL", "IS ARRAY", "IS OBJECT",
+                "matches",
+                "size ==", "size !=", "size >", "size >=", "size <", "size <="
+        );
+    }
+
+    private static boolean operatorTakesValue(String op) {
+        return !"EXISTS".equals(op) && !"NOT EXISTS".equals(op) && !op.startsWith("IS ");
+    }
+
+    private static String valuePromptFor(String op) {
+        if ("matches".equals(op)) return "regex, np. .+@.+";
+        if (op.startsWith("size")) return "liczba";
+        return "wartość";
+    }
+
+    private boolean removeFromTree(QbGroup target, QbGroup current) {
+        if (current.children.remove(target)) return true;
+        for (QbNode child : current.children) {
+            if (child instanceof QbGroup g && removeFromTree(target, g)) return true;
         }
-
-        String condition = buildCondition(field, op, value);
-        if (condition == null) return;
-        appendToken(condition);
+        return false;
     }
 
-    private String buildCondition(String field, String op, String value) {
-        switch (op) {
-            case "EXISTS":
-                return field + " EXISTS";
-            case "NOT EXISTS":
-                return field + " NOT EXISTS";
-            case "IS STRING": case "IS NUMBER": case "IS BOOLEAN":
-            case "IS ARRAY":  case "IS OBJECT": case "IS NULL":
-                return field + " " + op;
-            case "contains(...)":
-                if (value.isBlank()) { setStatus("contains wymaga wartości."); return null; }
-                return "contains(" + field + ", " + quoteIfNeeded(value) + ")";
-            case "size(...)":
-                if (value.isBlank()) { setStatus("size wymaga porównania, np. > 3."); return null; }
-                return "size(" + field + ") " + value;
-            case "startsWith(...)":
-                if (value.isBlank()) { setStatus("startsWith wymaga prefiksu."); return null; }
-                return "startsWith(" + field + ", " + quoteIfNeeded(value) + ")";
-            case "matches(...)":
-                if (value.isBlank()) { setStatus("matches wymaga wyrażenia regex."); return null; }
-                return "matches(" + field + ", " + quoteIfNeeded(value) + ")";
-            default:
-                if (value.isBlank()) { setStatus("Podaj wartość."); return null; }
-                return field + " " + op + " " + quoteIfNeeded(value);
+    private String serialize(QbGroup g) {
+        List<String> parts = new ArrayList<>();
+        for (QbNode child : g.children) {
+            String s = switch (child) {
+                case QbRule r -> serializeRule(r);
+                case QbGroup sub -> serialize(sub);
+            };
+            if (s != null && !s.isBlank()) parts.add(s);
         }
+        if (parts.isEmpty()) return "";
+
+        String body = parts.size() == 1
+                ? parts.get(0)
+                : "(" + String.join(" " + g.combinator.name() + " ", parts) + ")";
+
+        return g.negated ? "NOT " + (body.startsWith("(") ? body : "(" + body + ")") : body;
     }
 
-    private String quoteIfNeeded(String raw) {
-        String v = raw.trim();
-        if (v.isEmpty()) return "\"\"";
-        if (v.equalsIgnoreCase("true") || v.equalsIgnoreCase("false") || v.equalsIgnoreCase("null")) return v;
-        try { Double.parseDouble(v); return v; } catch (NumberFormatException ignored) {}
-        if ((v.startsWith("\"") && v.endsWith("\"")) || (v.startsWith("'") && v.endsWith("'"))) return v;
-        return "\"" + v.replace("\"", "\\\"") + "\"";
+    private String serializeRule(QbRule r) {
+        String field = r.field == null ? "" : r.field.trim();
+        String op = r.operator;
+        String value = r.value == null ? "" : r.value.trim();
+
+        if (field.isBlank()) return "";
+        if (!field.startsWith(".")) field = "." + field;
+
+        if (op.startsWith("IS ")) {
+            return field + " " + op;
+        }
+        return switch (op) {
+            case "EXISTS" -> field + " EXISTS";
+            case "NOT EXISTS" -> "NOT (" + field + " EXISTS)";
+            case "matches" -> "matches(" + field + ", " + quote(value) + ")";
+            case "size ==", "size !=", "size >", "size >=", "size <", "size <=" -> {
+                String compare = op.substring("size ".length());
+                yield "size(" + field + ") " + compare + " " + bareNumber(value);
+            }
+            default -> field + " " + op + " " + quote(value);
+        };
     }
 
-    @FXML private void onAnd()        { appendToken("AND"); }
-    @FXML private void onOr()         { appendToken("OR"); }
-    @FXML private void onNot()        { appendToken("NOT"); }
-    @FXML private void onOpenParen()  { appendRaw("("); }
-    @FXML private void onCloseParen() { appendRaw(")"); }
-
-    @FXML
-    private void onUndo() {
-        if (history.isEmpty()) return;
-        queryArea.setText(history.pop());
-        setStatus("Cofnięto.");
+    private String quote(String raw) {
+        if (raw.isEmpty()) return "\"\"";
+        if (raw.equalsIgnoreCase("true") || raw.equalsIgnoreCase("false") || raw.equalsIgnoreCase("null")) return raw;
+        try { Double.parseDouble(raw); return raw; } catch (NumberFormatException ignored) {}
+        if (raw.length() >= 2 && raw.startsWith("\"") && raw.endsWith("\"")) return raw;
+        return "\"" + raw.replace("\"", "\\\"") + "\"";
     }
 
-    @FXML
-    private void onClear() {
-        pushHistory();
-        queryArea.clear();
-        setStatus("Wyczyszczono.");
+    private String bareNumber(String raw) {
+        if (raw.isEmpty()) return "0";
+        return raw;
     }
 
     @FXML
     private void onValidate() {
         if (queryService == null) { setStatus("Brak serwisu zapytań."); return; }
-        String q = queryArea.getText();
+        String q = previewArea.getText();
         if (q == null || q.isBlank()) { setStatus("Zapytanie jest puste."); return; }
         Optional<String> err = queryService.validateQuery(q);
         setStatus(err.map(s -> "Błąd: " + s).orElse("OK ✓"));
@@ -157,7 +268,7 @@ public class QueryBuilderController {
 
     @FXML
     private void onApply() {
-        String q = queryArea.getText();
+        String q = previewArea.getText();
         if (q == null || q.isBlank()) { setStatus("Zapytanie jest puste."); return; }
         if (queryService != null) {
             Optional<String> err = queryService.validateQuery(q);
@@ -171,37 +282,25 @@ public class QueryBuilderController {
     private void onCancel() { close(); }
 
     private void close() {
-        Stage st = (Stage) queryArea.getScene().getWindow();
+        Stage st = (Stage) treeContainer.getScene().getWindow();
         st.close();
-    }
-
-    private void appendToken(String token) {
-        pushHistory();
-        String cur = textOf(queryArea.getText());
-        if (cur.isEmpty() || cur.endsWith("(")) {
-            queryArea.setText(cur + token);
-        } else {
-            queryArea.setText(cur + " " + token);
-        }
-        setStatus("");
-    }
-
-    private void appendRaw(String raw) {
-        pushHistory();
-        String cur = textOf(queryArea.getText());
-        if (raw.equals("(")) {
-            queryArea.setText(cur.isEmpty() || cur.endsWith("(") ? cur + raw : cur + " " + raw);
-        } else {
-            queryArea.setText(cur + raw);
-        }
-    }
-
-    private void pushHistory() {
-        history.push(textOf(queryArea.getText()));
-        if (history.size() > 50) history.pollLast();
     }
 
     private void setStatus(String s) { builderStatus.setText(s); }
 
-    private static String textOf(String s) { return s == null ? "" : s; }
+    enum Combinator { AND, OR }
+
+    sealed interface QbNode permits QbRule, QbGroup {}
+
+    static final class QbRule implements QbNode {
+        String field = "";
+        String operator = "==";
+        String value = "";
+    }
+
+    static final class QbGroup implements QbNode {
+        Combinator combinator = Combinator.AND;
+        boolean negated = false;
+        final List<QbNode> children = new ArrayList<>();
+    }
 }

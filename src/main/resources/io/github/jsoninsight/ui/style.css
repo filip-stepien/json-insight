@@ -199,6 +199,60 @@
     -fx-padding: 0;
 }
 
+/* === Query builder === */
+.qb-group {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #c8d0de;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10;
+}
+
+.qb-group-nested {
+    -fx-background-color: #f5f6fa;
+    -fx-border-color: #c8d0de;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8;
+}
+
+.qb-group-header .label,
+.qb-group-header .toggle-button {
+    -fx-font-size: 12px;
+}
+
+.qb-rule {
+    -fx-padding: 4 0 4 0;
+}
+
+.qb-remove {
+    -fx-background-color: transparent;
+    -fx-text-fill: #b04a4a;
+    -fx-font-weight: bold;
+    -fx-padding: 2 8 2 8;
+    -fx-cursor: hand;
+}
+
+.qb-remove:hover {
+    -fx-background-color: #fde0e0;
+    -fx-background-radius: 4;
+}
+
+.qb-scroll {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.qb-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.root.dark .qb-group { -fx-background-color: #2a2c33; -fx-border-color: #3a3c44; }
+.root.dark .qb-group-nested { -fx-background-color: #23252b; -fx-border-color: #3a3c44; }
+.root.dark .qb-remove { -fx-text-fill: #e07474; }
+.root.dark .qb-remove:hover { -fx-background-color: #3a2828; }
+
 /* === Dark mode === */
 .root.dark { -fx-background-color: #1e1f24; }
 .root.dark .main-toolbar { -fx-background-color: #2a2c33; -fx-border-color: transparent transparent #3a3c44 transparent; }

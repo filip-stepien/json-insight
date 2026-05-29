@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import io.github.jsoninsight.model.Category;
+import io.github.jsoninsight.model.Collection;
 import io.github.jsoninsight.model.JsonDocument;
 import io.github.jsoninsight.model.JsonSchema;
 import io.github.jsoninsight.service.DocumentService;
@@ -95,23 +95,23 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public void addCategory(Category category) {
-        JsonSchema schema = category.getSchema();
+    public void addCollection(Collection collection) {
+        JsonSchema schema = collection.getSchema();
         String content = schema.getSchemaContent() == null ? "" : schema.getSchemaContent();
 
         try (PreparedStatement ps = connection.prepareStatement(
                 "INSERT INTO schemas(name, content) VALUES (?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, category.getName());
+            ps.setString(1, collection.getName());
             ps.setString(2, content);
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
                     int id = keys.getInt(1);
-                    category.setId(id);
+                    collection.setId(id);
                     schema.setId(id);
                     if (schema.getName() == null) {
-                        schema.setName(category.getName());
+                        schema.setName(collection.getName());
                     }
                 }
             }
@@ -127,10 +127,10 @@ public class DocumentServiceImpl implements DocumentService {
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, document.getName());
             ps.setString(2, document.getContent());
-            if (document.getCategoryId() == 0) {
+            if (document.getCollectionId() == 0) {
                 ps.setNull(3, Types.INTEGER);
             } else {
-                ps.setInt(3, document.getCategoryId());
+                ps.setInt(3, document.getCollectionId());
             }
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
@@ -159,11 +159,11 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public List<JsonDocument> getDocumentsByCategory(int categoryId) {
+    public List<JsonDocument> getDocumentsByCollection(int collectionId) {
         List<JsonDocument> out = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(
                 "SELECT id, name, content, schema_id FROM documents WHERE schema_id = ? ORDER BY id")) {
-            ps.setInt(1, categoryId);
+            ps.setInt(1, collectionId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     out.add(readDocument(rs));
@@ -176,11 +176,11 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public void renameCategory(int categoryId, String newName) {
+    public void renameCollection(int collectionId, String newName) {
         try (PreparedStatement ps = connection.prepareStatement(
                 "UPDATE schemas SET name = ? WHERE id = ?")) {
             ps.setString(1, newName);
-            ps.setInt(2, categoryId);
+            ps.setInt(2, collectionId);
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Nie udało się zmienić nazwy kolekcji: " + e.getMessage(), e);
@@ -188,8 +188,8 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public List<Category> getAllCategories() {
-        List<Category> out = new ArrayList<>();
+    public List<Collection> getAllCollections() {
+        List<Collection> out = new ArrayList<>();
         try (Statement st = connection.createStatement();
              ResultSet rs = st.executeQuery(
                      "SELECT id, name, content FROM schemas ORDER BY id")) {
@@ -201,9 +201,9 @@ public class DocumentServiceImpl implements DocumentService {
                 JsonSchema schema = new JsonSchema(name, content);
                 schema.setId(id);
 
-                Category cat = new Category(name, schema);
-                cat.setId(id);
-                out.add(cat);
+                Collection col = new Collection(name, schema);
+                col.setId(id);
+                out.add(col);
             }
         } catch (SQLException e) {
             throw new RuntimeException("Błąd odczytu kolekcji: " + e.getMessage(), e);
@@ -218,7 +218,7 @@ public class DocumentServiceImpl implements DocumentService {
         d.setContent(rs.getString("content"));
         int schemaId = rs.getInt("schema_id");
         if (!rs.wasNull()) {
-            d.setCategoryId(schemaId);
+            d.setCollectionId(schemaId);
         }
         return d;
     }
