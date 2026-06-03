@@ -1,0 +1,7 @@
+flowchart LR
+    UI["Interfejs JavaFX"] --> APP["Logika aplikacji"]
+    APP --> JSON["Analiza JSON i schematy"]
+    APP --> QUERY["Obsługa zapytań"]
+    APP --> FILES["Import i eksport plików"]
+    APP --> DATA["Warstwa danych"]
+    DATA --> DB[("SQLite")]

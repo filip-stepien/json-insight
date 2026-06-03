@@ -1,0 +1,11 @@
+flowchart TD
+    A["Użytkownik dodaje plik JSON"] --> B["Sprawdzenie poprawności pliku"]
+    B --> C{"Czy dokument jest poprawny?"}
+    C -- "Nie" --> D["Komunikat o błędzie"]
+    C -- "Tak" --> E["Wyznaczenie schematu"]
+    E --> F{"Czy istnieje zgodna kolekcja?"}
+    F -- "Tak" --> G["Dodanie dokumentu do kolekcji"]
+    F -- "Nie" --> H["Utworzenie nowej kolekcji"]
+    G --> I["Zapis w bazie SQLite"]
+    H --> I
+    I --> J["Odświeżenie widoku aplikacji"]

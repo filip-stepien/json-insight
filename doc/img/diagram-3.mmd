@@ -1,0 +1,12 @@
+erDiagram
+    COLLECTION ||--o{ DOCUMENT : contains
+    COLLECTION {
+        number id
+        string name
+        json schema
+    }
+    DOCUMENT {
+        number id
+        string name
+        json content
+    }

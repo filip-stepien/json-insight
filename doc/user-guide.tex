@@ -1,0 +1,226 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[polish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=2.5cm}
+
+\definecolor{codebg}{RGB}{245,245,247}
+\definecolor{codeframe}{RGB}{210,210,214}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  breaklines=true,
+  columns=fullflexible,
+  showstringspaces=false,
+  framexleftmargin=4pt,
+  xleftmargin=4pt,
+  literate=%
+    {ą}{{\k a}}1 {ę}{{\k e}}1 {ć}{{\'c}}1 {ł}{{\l}}1 {ń}{{\'n}}1
+    {ó}{{\'o}}1 {ś}{{\'s}}1 {ź}{{\'z}}1 {ż}{{\.z}}1
+    {Ą}{{\k A}}1 {Ę}{{\k E}}1 {Ć}{{\'C}}1 {Ł}{{\L}}1 {Ń}{{\'N}}1
+    {Ó}{{\'O}}1 {Ś}{{\'S}}1 {Ź}{{\'Z}}1 {Ż}{{\.Z}}1
+}
+
+\title{JSON Insight \\ \large Dokumentacja użytkownika}
+\author{Filip Stępień \and Rafał Grot \and Bartłomiej Karkoszka}
+\date{}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Wprowadzenie}
+
+\textbf{JSON Insight} to aplikacja okienkowa służąca do analizy, klasyfikacji oraz
+przeszukiwania dokumentów w formacie JSON. Każdy dodany dokument jest sprawdzany pod
+kątem poprawności składni, a następnie na podstawie jego struktury generowany jest
+schemat (JSON Schema). Dokumenty o tej samej strukturze grupowane są w \emph{kolekcje},
+co pozwala porządkować dane bez ręcznego ich opisywania. Zgromadzone dokumenty można
+przeszukiwać przy użyciu prostego języka zapytań przypominającego SQL.
+
+\section{Wymagania}
+
+\begin{itemize}[noitemsep]
+  \item \textbf{JDK 21} -- aplikacja kompiluje się i działa na Javie w wersji 21.
+  \item \textbf{Maven} -- nie wymaga instalacji; w repozytorium znajduje się wrapper
+        (\texttt{mvnw} / \texttt{mvnw.cmd}).
+  \item System operacyjny: Linux, macOS lub Windows.
+\end{itemize}
+
+Dane aplikacji przechowywane są lokalnie w bazie SQLite w katalogu domowym użytkownika:
+
+\begin{lstlisting}
+~/.jsoninsight/jsoninsight.db
+\end{lstlisting}
+
+Katalog oraz tabele tworzone są automatycznie przy pierwszym uruchomieniu --
+nie jest wymagana żadna ręczna konfiguracja bazy.
+
+\section{Uruchomienie}
+
+Z katalogu głównego projektu należy wykonać:
+
+\begin{lstlisting}
+# macOS / Linux
+./mvnw clean javafx:run
+
+# Windows
+mvnw.cmd clean javafx:run
+\end{lstlisting}
+
+Polecenie pobierze zależności, skompiluje projekt i uruchomi okno aplikacji.
+Klasą startową jest \texttt{io.github.jsoninsight.ui.JsonInsightApplication}.
+
+\subsection{Pozostałe polecenia}
+
+\begin{lstlisting}
+./mvnw test            # testy jednostkowe (JUnit 5)
+./mvnw clean compile   # sama kompilacja
+\end{lstlisting}
+
+\section{Układ interfejsu}
+
+Główne okno składa się z czterech obszarów:
+
+\begin{enumerate}[noitemsep]
+  \item \textbf{Pasek narzędzi} (góra) -- przyciski dodawania i eksportu, pole zapytania,
+        przycisk kreatora oraz przełącznik trybu ciemnego.
+  \item \textbf{Panel boczny} (lewa strona) -- lista \emph{Kolekcji} oraz lista
+        \emph{Dokumentów}.
+  \item \textbf{Panel główny} (prawa strona) -- \emph{Podgląd dokumentu} (góra) oraz
+        \emph{Wyniki wyszukiwania} ze stronicowaniem (dół).
+  \item \textbf{Pasek statusu} (dół) -- komunikaty o stanie i wykonanych operacjach.
+\end{enumerate}
+
+\section{Funkcje}
+
+\subsection{Dodawanie dokumentów}
+
+Dokumenty można dodać na dwa sposoby:
+
+\begin{itemize}[noitemsep]
+  \item przyciskiem \textbf{,,Dodaj plik''}, który otwiera okno wyboru pliku \texttt{.json};
+  \item metodą \textbf{przeciągnij i upuść} -- jeden lub wiele plików \texttt{.json}
+        można upuścić bezpośrednio na okno aplikacji.
+\end{itemize}
+
+Po wczytaniu plik jest walidowany. Jeżeli zawartość nie jest poprawnym dokumentem JSON,
+wyświetlany jest komunikat o błędzie, a plik nie zostaje zapisany. Dla poprawnego
+dokumentu generowany jest schemat i porównywany z istniejącymi kolekcjami:
+
+\begin{itemize}[noitemsep]
+  \item przy zgodności struktury dokument trafia do \textbf{istniejącej kolekcji};
+  \item w przeciwnym razie aplikacja prosi o nazwę dla \textbf{nowej kolekcji}
+        (z proponowaną nazwą domyślną).
+\end{itemize}
+
+\subsection{Kolekcje}
+
+Lista \emph{Kolekcje} prezentuje nazwę każdej kolekcji wraz z liczbą przypisanych do niej
+dokumentów. Wybranie kolekcji:
+
+\begin{itemize}[noitemsep]
+  \item filtruje listę \emph{Dokumenty} do tej kolekcji,
+  \item wyświetla jej schemat w panelu podglądu,
+  \item zawęża zakres kolejnych wyszukiwań do tej kolekcji.
+\end{itemize}
+
+Nazwę kolekcji można zmienić, klikając ją prawym przyciskiem myszy i wybierając
+\textbf{,,Zmień nazwę\ldots''}.
+
+\subsection{Podgląd dokumentu}
+
+Zaznaczenie dokumentu (na liście dokumentów lub w wynikach wyszukiwania) wyświetla jego
+sformatowaną zawartość w panelu podglądu. Skrótem \texttt{Cmd/Ctrl + F} można wyszukać
+i podświetlić fragment tekstu w podglądzie.
+
+\subsection{Wyszukiwanie zapytaniem}
+
+W polu zapytania na pasku narzędzi można wpisać:
+
+\begin{itemize}[noitemsep]
+  \item \textbf{sam predykat}, np. \texttt{.age >= 18 AND .active == true} --
+        zostanie automatycznie owinięty w \texttt{SELECT * FROM \ldots WHERE \ldots};
+  \item \textbf{pełne zapytanie}, np.
+        \texttt{SELECT .name, .age FROM uzytkownicy WHERE .age > 21}.
+\end{itemize}
+
+Zakres przeszukiwania zależy od zaznaczenia: przy wybranej kolekcji przeszukiwane są
+tylko jej dokumenty, w przeciwnym razie -- wszystkie. Wyniki są stronicowane
+(20 pozycji na stronę), a nawigację zapewniają przyciski poprzedniej i następnej
+strony. Pełny opis składni języka zapytań znajduje się
+w pliku \texttt{doc/query-language.md}.
+
+\subsection{Kreator zapytań}
+
+Przycisk \textbf{,,Kreator''} otwiera wizualny budowniczy zapytań, który nie wymaga
+znajomości składni. Pozwala on:
+
+\begin{itemize}[noitemsep]
+  \item dodawać pojedyncze \textbf{warunki} (pole, operator, wartość) oraz zagnieżdżone
+        \textbf{grupy} warunków,
+  \item łączyć elementy operatorami \textbf{AND} / \textbf{OR} i negować całe grupy
+        przyciskiem \textbf{NOT},
+  \item korzystać z operatorów: porównań (\texttt{==}, \texttt{!=}, \texttt{>},
+        \texttt{>=}, \texttt{<}, \texttt{<=}), \texttt{EXISTS} / \texttt{NOT EXISTS},
+        \texttt{IS STRING/NUMBER/BOOLEAN/NULL/ARRAY/OBJECT}, dopasowania wyrażeniem
+        regularnym (\texttt{matches}) oraz rozmiaru (\texttt{size}),
+  \item korzystać z podpowiedzi nazw pól zbieranych z istniejących dokumentów,
+  \item obserwować podgląd zapytania na żywo, sprawdzić jego poprawność przyciskiem
+        \textbf{,,Sprawdź''} i przekazać je do wyszukiwarki przyciskiem
+        \textbf{,,Zastosuj''}.
+\end{itemize}
+
+\subsection{Eksport danych}
+
+\begin{itemize}[noitemsep]
+  \item \textbf{Pobierz dokument} -- zapisuje zaznaczony dokument do pliku \texttt{.json}.
+  \item \textbf{Pobierz schemat} -- zapisuje (sformatowany) schemat zaznaczonej kolekcji
+        do pliku \texttt{.json}.
+  \item \textbf{Eksport wyników} -- zapisuje wszystkie wyniki wyszukiwania do pliku
+        \texttt{.jsonl} lub \texttt{.csv}; format wybierany jest rozszerzeniem pliku.
+\end{itemize}
+
+\subsection{Tryb ciemny}
+
+Przełącznik \textbf{,,Dark''} na pasku narzędzi zmienia motyw kolorystyczny aplikacji.
+Ustawienie obejmuje również okno kreatora zapytań.
+
+\section{Typowy scenariusz pracy}
+
+\begin{enumerate}[noitemsep]
+  \item Uruchom aplikację poleceniem \texttt{./mvnw clean javafx:run}.
+  \item Dodaj pliki JSON przyciskiem ,,Dodaj plik'' lub przeciągając je na okno;
+        nadaj nazwy nowym kolekcjom.
+  \item Przeglądaj kolekcje i dokumenty, korzystając z panelu bocznego oraz podglądu.
+  \item Wyszukaj interesujące dokumenty -- wpisując zapytanie ręcznie lub budując je
+        w kreatorze.
+  \item Wyeksportuj pojedynczy dokument, schemat kolekcji lub komplet wyników
+        wyszukiwania.
+\end{enumerate}
+
+\section{Struktura projektu}
+
+\begin{lstlisting}
+src/main/java/io/github/jsoninsight/
+  ui/        # JavaFX: aplikacja, kontrolery, widoki FXML
+  service/   # uslugi: dokumenty, schematy, zapytania (+ impl/)
+  model/     # model danych: JsonDocument, Collection, JsonSchema...
+  json/      # lekser/parser JSON, generator schematu
+  query/     # jezyk zapytan: lekser, parser, AST, ewaluator
+\end{lstlisting}
+
+\paragraph{Technologie.} JavaFX 21, SQLite (sqlite-jdbc), Gson, Lombok, JUnit~5, Maven.
+
+\end{document}
