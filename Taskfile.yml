@@ -1,0 +1,29 @@
+version: '3'
+
+vars:
+  PDF: doc/README.pdf
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  pdf:
+    desc: Render README.md to a PDF with pandoc (xelatex)
+    sources:
+      - README.md
+      - doc/img/**/*
+    generates:
+      - '{{.PDF}}'
+    cmds:
+      - >-
+        pandoc README.md
+        --from gfm
+        --pdf-engine=xelatex
+        --resource-path=.
+        -V geometry:margin=2.5cm
+        -V documentclass=article
+        -o {{.PDF}}
+      - 'echo "Wrote {{.PDF}}"'

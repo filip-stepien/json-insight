@@ -48,3 +48,7 @@ build/
 .direnv
 
 .idea/
+
+### Generated docs / Task ###
+doc/README.pdf
+.task/
